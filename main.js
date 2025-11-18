@@ -506,9 +506,13 @@ Cesium.BingMapsApi.defaultKey = 'AvpcYMdwXvBkX6V51Yz9Lgfspl-qOUbaNkXhlMMiJCLuFxo
 
 var CsView = new Cesium.Viewer("MainDisplay", {
     imageryProvider : Cesium.createTileMapServiceImageryProvider({
-	url : Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII")
+    	url : Cesium.buildModuleUrl("Assets/Textures/NaturalEarthII")
     }),
-    baseLayerPicker : true,
+    // Avoid Cesium Ion default assets (expired token) by disabling pickers
+    baseLayerPicker : false,
+    imageryProviderViewModels : [],
+    terrainProviderViewModels : [],
+    terrainProvider: new Cesium.EllipsoidTerrainProvider(),
     geocoder : false,
     animation : true,
     timeline : true,
