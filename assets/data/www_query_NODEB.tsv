@@ -1,0 +1,3 @@
+DataSource	Name	Country	CatalogId	NoradId	BirthDate	Operator	Users	Purpose	DetailedPurpose	LaunchMass	DryMass	Power	Lifetime	Contractor	LaunchSite	LaunchVehicle	OrbitType	Epoch	SMA	Ecc	Inc	RAAN	ArgP	MeanAnom
+USSTRATCOM	DEMO-SAT-1	USA	1999-001A	99001	2019-01-01	DemoOps	Civil	Communications	Demo payload	500	250	1000	5	DemoCorp	KSC	Delta II	LEO	2020-01-01T00:00:00Z	6778137	0.001	51.6	0	0	0
+USSTRATCOM	DEMO-SAT-2	USA	2005-025A	55005	2020-05-01	DemoOps	Commercial	Imaging	Demo camera	600	300	1200	7	DemoCorp	VAFB	Falcon 9	LEO	2020-01-02T00:00:00Z	7078137	0.002	53.0	30	45	10
