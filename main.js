@@ -177,9 +177,10 @@ function GetSpaceObjects(url, filt, OnDone)
 function DisplayObjects(D)
 {
     var epjd = new Cesium.JulianDate()
-    var dsnsel = $("#DataSrcSelect").val()
-    var orgsel = $("#OriginSelect").val()
-    var regsel = $("#RegimeSelect").val()
+    // Default filters to 'ALL' if the selects are not yet initialized
+    var dsnsel = $("#DataSrcSelect").val() || "ALL"
+    var orgsel = $("#OriginSelect").val() || "ALL"
+    var regsel = $("#RegimeSelect").val() || "ALL"
     var ent, trk, t, X, col, htm, ele, fld, i, name, names = []
     var CRFtoTRF = Cesium.Transforms.computeIcrfToFixedMatrix(SimStart)
     var debcb = window.document.getElementById("DebrisToggle")
@@ -576,6 +577,11 @@ $.get("./origins.csv", function (csv) {
     $("#OriginSelect").val("ALL")
     $("#OriginSelect").selectmenu({width : "100%"})
     $("#OriginSelect").selectmenu("refresh")
+    // If objects were already loaded before origins were ready, repaint now
+    try {
+        var hasData = false; for (var k in ObjData) { hasData = true; break; }
+        if (hasData) DisplayObjects(ObjData)
+    } catch (e) { /* no-op */ }
 })
 
 Cesium.Transforms.preloadIcrfFixed(new Cesium.TimeInterval({
