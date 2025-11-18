@@ -1,2 +1,2 @@
 DataSource	Name	Country	CatalogId	NoradId	BirthDate	Operator	Users	Purpose	DetailedPurpose	LaunchMass	DryMass	Power	Lifetime	Contractor	LaunchSite	LaunchVehicle	OrbitType	Epoch	SMA	Ecc	Inc	RAAN	ArgP	MeanAnom
-USSTRATCOM	DEMO-DEB-1	USA	2010-050B	70001	2019-01-01	-	-	-	-	0	0	0	0	-	-	-	LEO	2020-01-01T00:00:00Z	6678137	0.01	52.0	60	10	20
+USSTRATCOM	DEMO-DEB-1	USA	2010-050B	70001	2019-01-01	-	-	-	-	0	0	0	0	-	-	-	LEO	2020-01-01T00:00:00Z	6678137	0.01	0.907571211	1.047197551	0.174532925	0.34906585
