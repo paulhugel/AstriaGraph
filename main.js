@@ -209,7 +209,10 @@ function DisplayObjects(D)
     for (s in D)
     {
 	trk = D[s]
-	if (trk["DataSource"] == "UCS")
+	// Historically, UCS rows were used only to identify "active" objects and were hidden
+	// to avoid duplication with other sources. When using static/local datasets (e.g.,
+	// GitHub Pages fallback), we allow UCS to be displayed so data is visible.
+	if (trk["DataSource"] == "UCS" && !UseLocalData)
 	    continue
 
 	ent = CsView.entities.getById(s)
