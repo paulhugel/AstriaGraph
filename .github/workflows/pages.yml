@@ -40,10 +40,11 @@ jobs:
               await github.rest.actions.deleteArtifact({ owner, repo, artifact_id: a.id });
             }
 
-      - name: Upload artifact
+      - name: Upload artifact (AstriaGraph subdir)
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          # Only publish the site folder, not the whole monorepo
+          path: 'AstriaGraph'
 
       - name: Deploy to GitHub Pages
         id: deployment

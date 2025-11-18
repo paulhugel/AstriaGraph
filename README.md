@@ -4,6 +4,7 @@ A static, client-side visualization that renders resident space objects in Cesiu
 
 ## GitHub Pages deployment
 - Pages workflow is included and deploys on pushes to `master`/`main`: `AstriaGraph/.github/workflows/pages.yml:1`.
+- The workflow uploads only the `AstriaGraph/` directory as the Pages artifact to ensure correct site root mapping.
 - Jekyll is disabled via `AstriaGraph/.nojekyll:1`.
 - Cesium assets load from CDN (no large vendored `cesium/` folder):
   - CSS import: `AstriaGraph/index.html:125`
@@ -46,6 +47,7 @@ A static, client-side visualization that renders resident space objects in Cesiu
   - `cd AstriaGraph && python3 -m http.server 8080`
   - Open `http://localhost:8080/`
 - Optional: point at a local API by adding the `ASTRIAGRAPH_API_BASE` snippet to `index.html` during development.
+- Health check page (for Pages verification): `assets/health.html` shows the reachability of TSV files and the detected data mode.
 
 ## Notes
 - This repo intentionally does not vendor the Cesium build (original `.gitignore` excludes `cesium/`). The UI is pinned to CesiumJS `1.58` via CDN for API compatibility.
