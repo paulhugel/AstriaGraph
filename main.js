@@ -31,11 +31,17 @@ var UseLocalData = (ApiBase.length === 0)
             badge.textContent = "Static data"
             badge.className = "static"
             badge.title = "Using local TSV files in assets/data/*.tsv"
+            if (typeof console !== 'undefined' && console.info)
+                console.info('[AstriaGraph] Data mode: Static data (assets/data/*.tsv)')
         } else {
             badge.textContent = "Live API"
             badge.className = "live"
             badge.title = "Using API base: " + ApiBase
+            if (typeof console !== 'undefined' && console.info)
+                console.info('[AstriaGraph] Data mode: Live API', { base: ApiBase })
         }
+        if (typeof console !== 'undefined' && console.debug)
+            console.debug('[AstriaGraph] window.ASTRIAGRAPH_API_BASE =', (typeof window !== 'undefined' ? window.ASTRIAGRAPH_API_BASE : undefined))
     } catch (e) { /* no-op */ }
 })()
 var NumFields = [0, 4, 5, 6, 7, 22, 23, 24, 25, 26, 27]
