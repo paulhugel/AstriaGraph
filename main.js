@@ -89,6 +89,19 @@ function GetDataSources()
 	    GetSpaceObjects("assets/data/www_query_NODEB.tsv", "", DisplayObjects)
 	else
 	    GetSpaceObjects(ApiBase + "/www_query?filter=", "NODEB", DisplayObjects)
+    },
+    error : function(xhr, status, err)
+    {
+        if (typeof console !== 'undefined' && console.error)
+            console.error('[AstriaGraph] Failed to load data sources', { url: dsUrl, status: status, err: err, http: xhr && xhr.status })
+        try {
+            var badge = window.document && window.document.getElementById('DataModeBadge')
+            if (badge) {
+                badge.textContent = 'Data sources failed'
+                badge.className = 'static'
+                badge.title = 'Failed to load ' + dsUrl
+            }
+        } catch (e) { /* no-op */ }
     }})
 }
 
@@ -145,6 +158,19 @@ function GetSpaceObjects(url, filt, OnDone)
 	}
 
 	OnDone(ObjData)
+    },
+    error : function(xhr, status, err)
+    {
+        if (typeof console !== 'undefined' && console.error)
+            console.error('[AstriaGraph] Failed to load space objects', { url: url + filt, status: status, err: err, http: xhr && xhr.status })
+        try {
+            var badge = window.document && window.document.getElementById('DataModeBadge')
+            if (badge) {
+                badge.textContent = 'Object data failed'
+                badge.className = 'static'
+                badge.title = 'Failed to load ' + (url + filt)
+            }
+        } catch (e) { /* no-op */ }
     }})
 }
 
