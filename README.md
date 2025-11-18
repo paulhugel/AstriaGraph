@@ -36,6 +36,10 @@ A static, client-side visualization that renders resident space objects in Cesiu
 
 - Snippet location in this repo: `AstriaGraph/index.html:269` (commented block directly above `main.js`).
 
+### Alternative: config.js
+- You can also set the API base in `AstriaGraph/config.js` (loaded before `main.js`).
+- If both `config.js` and the inline snippet are used, the inline snippet (closer to `main.js`) takes precedence.
+
 ## Local development
 - Serve the folder to avoid CORS/file:// issues:
   - `cd AstriaGraph && python3 -m http.server 8080`
