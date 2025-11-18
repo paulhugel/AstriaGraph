@@ -4,7 +4,7 @@ A static, client-side visualization that renders resident space objects in Cesiu
 
 ## GitHub Pages deployment
 - Pages workflow is included and deploys on pushes to `master`/`main`: `AstriaGraph/.github/workflows/pages.yml:1`.
-- The workflow uploads only the `AstriaGraph/` directory as the Pages artifact to ensure correct site root mapping.
+- The workflow uploads the repository root (.) as the Pages artifact; this repo’s root is the site root.
 - Jekyll is disabled via `AstriaGraph/.nojekyll:1`.
 - Cesium assets load from CDN (no large vendored `cesium/` folder):
   - CSS import: `AstriaGraph/index.html:125`
