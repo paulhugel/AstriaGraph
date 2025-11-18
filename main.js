@@ -150,8 +150,15 @@ function GetSpaceObjects(url, filt, OnDone)
 		}
 
 		if (col == "Epoch" || col == "SMA" || col == "Ecc" || col == "Inc" ||
-		    col == "RAAN" || col == "ArgP" || col == "MeanAnom")
-		    ObjData[N+i-1]["Elem"][col] = val
+		    col == "RAAN" || col == "ArgP" || col == "MeanAnom") {
+		    // Coerce orbital element numerics explicitly; keep Epoch as string
+		    if (col == "Epoch")
+			ObjData[N+i-1]["Elem"][col] = fields[j]
+		    else {
+			var nv = Number(fields[j])
+			ObjData[N+i-1]["Elem"][col] = (isNaN(nv) ? fields[j] : nv)
+		    }
+		}
 		else
 		    ObjData[N+i-1][col] = val
 	    }
@@ -199,11 +206,11 @@ function DisplayObjects(D)
     {
 	trk = D[s]
 	if (trk["DataSource"] == "UCS")
-	    active.push(trk["NoradId"])
+	    active.push(String(trk["NoradId"]))
 	if (trk["DataSource"] == "USSTRATCOM" &&
-	    (trk["BirthDate"].length > 4 && Number(trk["BirthDate"].slice(0, 4)) >= 2017) &&
+	    (String(trk["BirthDate"]).length > 4 && Number(String(trk["BirthDate"]).slice(0, 4)) >= 2017) &&
 	    trk["Name"].search("DEB") == -1 && trk["Name"].search("R/B") == -1)
-	    active.push(trk["NoradId"])
+	    active.push(String(trk["NoradId"]))
     }
 
     for (s in D)
@@ -222,7 +229,7 @@ function DisplayObjects(D)
 	{
 	    if (trk["Name"].length > 0)
 	    {
-		if (trk["NoradId"].length > 0)
+		if (String(trk["NoradId"]).length > 0)
 		    name = trk["Name"] + " (" + trk["NoradId"] + ")"
 		else
 		    name = trk["Name"] + " (" + trk["CatalogId"] + ")"
@@ -253,10 +260,12 @@ function DisplayObjects(D)
 	    }
 	}
 
-	Cesium.JulianDate.fromIso8601(trk["Elem"]["Epoch"], epjd)
+	try { Cesium.JulianDate.fromIso8601(trk["Elem"]["Epoch"], epjd) } catch (e) { continue }
+	var _sma = Number(trk["Elem"]["SMA"]) , _ecc = Number(trk["Elem"]["Ecc"]) , _inc = Number(trk["Elem"]["Inc"])
+	if (!isFinite(_sma) || _sma <= 0 || !isFinite(_ecc) || !isFinite(_inc)) continue
 	t = Cesium.JulianDate.daysDifference(SimStart, epjd)
-	trk["Elem"]["mmo"] = Math.sqrt(EGM96_mu/(trk["Elem"]["SMA"]*trk["Elem"]["SMA"]*trk["Elem"]["SMA"]))
-	trk["Elem"]["MeanAnom"] = (trk["Elem"]["MeanAnom"] + trk["Elem"]["mmo"]*t*86400) % TwoPi
+	trk["Elem"]["mmo"] = Math.sqrt(EGM96_mu/(_sma*_sma*_sma))
+	trk["Elem"]["MeanAnom"] = (Number(trk["Elem"]["MeanAnom"]) + trk["Elem"]["mmo"]*t*86400) % TwoPi
 
 	if (active.indexOf(trk["NoradId"]) == -1)
 	    col = Cesium.Color.CYAN
@@ -294,7 +303,8 @@ function UpdatePosition(CRFtoTRF, trkid)
 	var u = jQuery.extend({}, ele)
 	u.MeanAnom = (u.MeanAnom + u.mmo*t) % TwoPi
 	var eff = new Cesium.Cartesian3()
-	var eci = eltocart(u, true, 1E-3)
+	var eci
+	try { eci = eltocart(u, true, 1E-3) } catch (e) { return Cesium.Cartesian3.ZERO }
 	Cesium.Matrix3.multiplyByVector(CRFtoTRF, eci, eff)
 	return(eff)
     })
@@ -321,8 +331,10 @@ function DisplayOrbit(obj)
 	var same = ObjData[s]
 	if (dsnsel != "ALL" && dsnsel != same["DataSource"])
 	    continue
-	if (s != obj.id && (same["NoradId"].length == 0 || same["NoradId"] != ObjData[obj.id]["NoradId"]))
-	    continue
+	if (s != obj.id) {
+	    var _n1 = String(same["NoradId"] || ""), _n2 = String(ObjData[obj.id]["NoradId"] || "")
+	    if (_n1.length == 0 || _n1 != _n2) continue
+	}
 
 	var sta, arr = []
 	var ele = same["Elem"]
