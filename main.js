@@ -21,6 +21,23 @@ var DataSources = []
 // so when no base is provided we fall back to static local files in assets/.
 var ApiBase = (typeof window !== 'undefined' && window.ASTRIAGRAPH_API_BASE) ? window.ASTRIAGRAPH_API_BASE.replace(/\/$/, '') : ''
 var UseLocalData = (ApiBase.length === 0)
+
+// Indicate data mode in UI badge if present
+;(function () {
+    try {
+        var badge = window.document && window.document.getElementById("DataModeBadge")
+        if (!badge) return
+        if (UseLocalData) {
+            badge.textContent = "Static data"
+            badge.className = "static"
+            badge.title = "Using local TSV files in assets/data/*.tsv"
+        } else {
+            badge.textContent = "Live API"
+            badge.className = "live"
+            badge.title = "Using API base: " + ApiBase
+        }
+    } catch (e) { /* no-op */ }
+})()
 var NumFields = [0, 4, 5, 6, 7, 22, 23, 24, 25, 26, 27]
 var InfoFields = ["Name", "Country", "CatalogId", "NoradId", "BirthDate", "Operator", "Users",
 		  "Purpose", "DetailedPurpose", "LaunchMass", "DryMass", "Power", "Lifetime",

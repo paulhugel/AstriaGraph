@@ -50,3 +50,4 @@ A static, client-side visualization that renders resident space objects in Cesiu
 ## Notes
 - This repo intentionally does not vendor the Cesium build (original `.gitignore` excludes `cesium/`). The UI is pinned to CesiumJS `1.58` via CDN for API compatibility.
 - Licensing remains as per `COPYING` (GPLv3). The small TSV samples are for demo only.
+- A small badge at the top-right indicates data mode at runtime: "Static data" when using `assets/data/*.tsv`, or "Live API" when `ASTRIAGRAPH_API_BASE` is set.
