@@ -11,8 +11,8 @@ permissions:
   actions: write
 
 concurrency:
-  group: "pages"
-  cancel-in-progress: false
+  group: "pages-${{ github.ref }}"
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -27,23 +27,14 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      - name: Cleanup duplicate Pages artifacts
-        uses: actions/github-script@v7
-        continue-on-error: true
-        with:
-          script: |
-            try {
-              const run_id = process.env.GITHUB_RUN_ID;
-              const { owner, repo } = context.repo;
-              const { data } = await github.rest.actions.listWorkflowRunArtifacts({ owner, repo, run_id });
-              const artifacts = data.artifacts.filter(a => a.name === 'github-pages');
-              for (const a of artifacts) {
-                core.info(`Deleting artifact ${a.id} (${a.name})`);
-                await github.rest.actions.deleteArtifact({ owner, repo, artifact_id: a.id });
-              }
-            } catch (e) {
-              core.warning(`Cleanup step failed (non-fatal): ${e && e.message ? e.message : e}`);
-            }
+      # Removed artifact cleanup to reduce moving parts; deploy-pages handles existing artifacts.
+
+      - name: Debug workspace
+        run: |
+          echo "Ref: $GITHUB_REF" && echo "SHA: $GITHUB_SHA"
+          pwd
+          ls -la
+          test -f index.html && echo "index.html present" || (echo "index.html missing" && exit 2)
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
