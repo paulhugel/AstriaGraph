@@ -29,15 +29,20 @@ jobs:
 
       - name: Cleanup duplicate Pages artifacts
         uses: actions/github-script@v7
+        continue-on-error: true
         with:
           script: |
-            const run_id = process.env.GITHUB_RUN_ID;
-            const { owner, repo } = context.repo;
-            const { data } = await github.rest.actions.listWorkflowRunArtifacts({ owner, repo, run_id });
-            const artifacts = data.artifacts.filter(a => a.name === 'github-pages');
-            for (const a of artifacts) {
-              core.info(`Deleting artifact ${a.id} (${a.name})`);
-              await github.rest.actions.deleteArtifact({ owner, repo, artifact_id: a.id });
+            try {
+              const run_id = process.env.GITHUB_RUN_ID;
+              const { owner, repo } = context.repo;
+              const { data } = await github.rest.actions.listWorkflowRunArtifacts({ owner, repo, run_id });
+              const artifacts = data.artifacts.filter(a => a.name === 'github-pages');
+              for (const a of artifacts) {
+                core.info(`Deleting artifact ${a.id} (${a.name})`);
+                await github.rest.actions.deleteArtifact({ owner, repo, artifact_id: a.id });
+              }
+            } catch (e) {
+              core.warning(`Cleanup step failed (non-fatal): ${e && e.message ? e.message : e}`);
             }
 
       - name: Upload artifact
