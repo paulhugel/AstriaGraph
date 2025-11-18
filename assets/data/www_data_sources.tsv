@@ -1,6 +1,6 @@
 Code	Name
-USSTRATCOM	USSTRATCOM
-AstriaODLL	Astria OD/LeoLabs Data
-AstriaODSB	Astria OD/Starbrook Data
-SeeSat	SeeSat-L
-UCS	UCS
+0	USSPACECOM
+1	Planet
+3	JSC Vimpel
+4	SeeSat-L
+7	UCS
