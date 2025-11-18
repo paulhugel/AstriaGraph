@@ -34,6 +34,8 @@ A static, client-side visualization that renders resident space objects in Cesiu
   - `${ASTRIAGRAPH_API_BASE}/www_data_sources` for the sources list.
   - `${ASTRIAGRAPH_API_BASE}/www_query?filter=NODEB` for non‑debris, and `...filter=DEB` when debris is toggled.
 
+- Snippet location in this repo: `AstriaGraph/index.html:269` (commented block directly above `main.js`).
+
 ## Local development
 - Serve the folder to avoid CORS/file:// issues:
   - `cd AstriaGraph && python3 -m http.server 8080`
