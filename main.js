@@ -17,6 +17,10 @@
  */
 
 var DataSources = []
+// Configure API base for dynamic data. On GitHub Pages there is no backend,
+// so when no base is provided we fall back to static local files in assets/.
+var ApiBase = (typeof window !== 'undefined' && window.ASTRIAGRAPH_API_BASE) ? window.ASTRIAGRAPH_API_BASE.replace(/\/$/, '') : ''
+var UseLocalData = (ApiBase.length === 0)
 var NumFields = [0, 4, 5, 6, 7, 22, 23, 24, 25, 26, 27]
 var InfoFields = ["Name", "Country", "CatalogId", "NoradId", "BirthDate", "Operator", "Users",
 		  "Purpose", "DetailedPurpose", "LaunchMass", "DryMass", "Power", "Lifetime",
@@ -36,7 +40,8 @@ var SimStop = Cesium.JulianDate.addSeconds(SimStart, SimInt, new Cesium.JulianDa
 
 function GetDataSources()
 {
-    $.ajax({method : "GET", url : "/AstriaGraph/api/www_data_sources",
+    var dsUrl = UseLocalData ? "assets/data/www_data_sources.tsv" : (ApiBase + "/www_data_sources")
+    $.ajax({method : "GET", url : dsUrl,
     success : function(resp)
     {
 	var i, fields
@@ -57,7 +62,10 @@ function GetDataSources()
 
 	$("#DataSrcSelect").val("ALL")
 	$("#DataSrcSelect").selectmenu("refresh")
-	GetSpaceObjects("/AstriaGraph/api/www_query?filter=", "NODEB", DisplayObjects)
+	if (UseLocalData)
+	    GetSpaceObjects("assets/data/www_query_NODEB.tsv", "", DisplayObjects)
+	else
+	    GetSpaceObjects(ApiBase + "/www_query?filter=", "NODEB", DisplayObjects)
     }})
 }
 
@@ -428,7 +436,10 @@ function OnToggleDebris()
     var cb = window.document.getElementById("DebrisToggle")
     if (cb.checked && !DebrisLoaded)
     {
-	GetSpaceObjects("/AstriaGraph/api/www_query?filter=", "DEB", DisplayObjects)
+	if (UseLocalData)
+	    GetSpaceObjects("assets/data/www_query_DEB.tsv", "", DisplayObjects)
+	else
+	    GetSpaceObjects(ApiBase + "/www_query?filter=", "DEB", DisplayObjects)
 	DebrisLoaded = true
     }
     else
