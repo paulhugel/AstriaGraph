@@ -49,6 +49,18 @@ A static, client-side visualization that renders resident space objects in Cesiu
 - Optional: point at a local API by adding the `ASTRIAGRAPH_API_BASE` snippet to `index.html` during development.
 - Health check page (for Pages verification): `assets/health.html` shows the reachability of TSV files and the detected data mode.
 
+### Populate large static datasets (no backend)
+- Use the included script to fetch CelesTrak GP JSON and convert to AstriaGraph TSVs:
+  - `node AstriaGraph/scripts/fetch_celestrak.mjs`
+  - This writes:
+    - `assets/data/www_query_NODEB.tsv` (active satellites)
+    - `assets/data/www_query_DEB.tsv` (Iridium-33 and Cosmos-2251 debris)
+  - Then force-add and push (the `assets/data` folder is gitignored):
+    - `git add -f assets/data/www_query_NODEB.tsv assets/data/www_query_DEB.tsv`
+    - `git commit -m "AstriaGraph: update static TSVs from CelesTrak"`
+    - `git push`
+- After the Pages deploy is green, hard-refresh the site.
+
 ## Notes
 - This repo intentionally does not vendor the Cesium build (original `.gitignore` excludes `cesium/`). The UI is pinned to CesiumJS `1.58` via CDN for API compatibility.
 - Licensing remains as per `COPYING` (GPLv3). The small TSV samples are for demo only.
