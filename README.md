@@ -36,9 +36,10 @@ A static, client-side visualization that renders resident space objects in Cesiu
 
 - Snippet location in this repo: `AstriaGraph/index.html:269` (commented block directly above `main.js`).
 
-### Alternative: config.js
-- You can also set the API base in `AstriaGraph/config.js` (loaded before `main.js`).
-- If both `config.js` and the inline snippet are used, the inline snippet (closer to `main.js`) takes precedence.
+### Alternatives: config.js and config.local.js
+- You can set the API base in `AstriaGraph/config.js` (loaded before `main.js`).
+- For local/developer overrides without committing secrets, copy `AstriaGraph/config.local.example.js` to `AstriaGraph/config.local.js` and set values there. This file is git‑ignored and loaded after `config.js`.
+- Precedence (last one wins): `config.js` → `config.local.js` → inline snippet in `index.html`.
 
 ## Local development
 - Serve the folder to avoid CORS/file:// issues:

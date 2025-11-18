@@ -1,3 +1,4 @@
 cesium
 data/
 server/
+config.local.js
