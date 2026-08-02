@@ -6,7 +6,7 @@
   Outputs:
     - assets/data/www_query_NODEB.tsv (active satellites)
     - assets/data/www_query_DEB.tsv   (selected debris groups)
-  Leaves existing assets/data/www_data_sources.tsv as-is (must include USSTRATCOM).
+  Leaves existing assets/data/www_data_sources.tsv as-is (must include CELESTRAK).
 
   Usage:
     node AstriaGraph/scripts/fetch_celestrak.mjs
@@ -55,7 +55,7 @@ function rowFromCelestrak(obj) {
   const meanAnom = deg2rad(obj.MEAN_ANOMALY)
 
   const cols = [
-    'USSTRATCOM', // DataSource code, maps via www_data_sources.tsv
+    'CELESTRAK', // DataSource code, maps via www_data_sources.tsv
     name,
     '',            // Country
     catalogId,
@@ -81,14 +81,31 @@ async function fetchJson(url) {
   return res.json()
 }
 
+async function writeAtomic(filePath, contents) {
+  const tempPath = `${filePath}.tmp-${process.pid}`
+  try {
+    await fs.writeFile(tempPath, contents)
+    await fs.rename(tempPath, filePath)
+  } catch (error) {
+    await fs.rm(tempPath, { force: true }).catch(() => {})
+    throw error
+  }
+}
+
+function validateRecords(records, label) {
+  if (!Array.isArray(records) || records.length === 0)
+    throw new Error(`No ${label} records were fetched; refusing to publish datasets`)
+  if (records.some(record => !record || typeof record !== 'object'))
+    throw new Error(`Invalid ${label} record received; refusing to publish datasets`)
+}
+
 async function main() {
   await fs.mkdir(OUT_DIR, { recursive: true })
 
   // Active satellites → NODEB file (non-debris)
   const activeUrl = 'https://celestrak.org/NORAD/elements/gp.php?GROUP=active&FORMAT=json'
   const active = await fetchJson(activeUrl)
-  const nodebLines = [HEADER, ...active.map(rowFromCelestrak)]
-  await fs.writeFile(path.join(OUT_DIR, 'www_query_NODEB.tsv'), nodebLines.join('\n'))
+  validateRecords(active, 'active')
 
   // Debris: use the named CelesTrak groups that are currently supported.
   // An invalid group must not silently replace the checked-in dataset with
@@ -110,8 +127,12 @@ async function main() {
   if (debrisAll.length === 0) {
     throw new Error('No debris records were fetched; refusing to overwrite www_query_DEB.tsv')
   }
+  validateRecords(debrisAll, 'debris')
+
+  const nodebLines = [HEADER, ...active.map(rowFromCelestrak)]
   const debLines = [HEADER, ...debrisAll.map(rowFromCelestrak)]
-  await fs.writeFile(path.join(OUT_DIR, 'www_query_DEB.tsv'), debLines.join('\n'))
+  await writeAtomic(path.join(OUT_DIR, 'www_query_NODEB.tsv'), nodebLines.join('\n'))
+  await writeAtomic(path.join(OUT_DIR, 'www_query_DEB.tsv'), debLines.join('\n'))
 
   console.log(`Wrote ${active.length} active → www_query_NODEB.tsv`)
   console.log(`Wrote ${debrisAll.length} debris → www_query_DEB.tsv`)
