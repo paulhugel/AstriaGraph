@@ -30,5 +30,8 @@ const mainSource = fs.readFileSync(new URL('../main.js', import.meta.url), 'utf8
 assert.match(mainSource, /function UseStaticFallback\(/)
 assert.match(mainSource, /function ValidateTsvResponse\(/)
 assert.match(mainSource, /function ValidateDataSourceResponse\(/)
+assert.match(mainSource, /function StartDataLoad\(/)
+assert.match(mainSource, /DataLoadStarted/)
+assert.match(mainSource, /preload timed out/)
 assert.doesNotMatch(mainSource, /object_name:\s|norad_id:\s/)
 console.log('CelesTrak validation fixtures passed')
