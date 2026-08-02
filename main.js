@@ -739,8 +739,31 @@ $.get("./origins.csv", function (csv) {
     } catch (e) { /* no-op */ }
 })
 
-Cesium.Transforms.preloadIcrfFixed(new Cesium.TimeInterval({
+var DataLoadStarted = false
+function StartDataLoad()
+{
+    if (DataLoadStarted)
+        return
+    DataLoadStarted = true
+    GetDataSources()
+}
+
+var preload = Cesium.Transforms.preloadIcrfFixed(new Cesium.TimeInterval({
     start: new Cesium.JulianDate(J2000Epoch - JulCent),
-    stop: new Cesium.JulianDate(J2000Epoch + JulCent),})).then(function() {
-	GetDataSources()
-})
+    stop: new Cesium.JulianDate(J2000Epoch + JulCent),}))
+if (preload && typeof preload.then === 'function') {
+    preload.then(StartDataLoad, function (err) {
+        if (typeof console !== 'undefined' && console.warn)
+            console.warn('[AstriaGraph] Cesium preload unavailable; loading data without it', err)
+        StartDataLoad()
+    })
+    window.setTimeout(function () {
+        if (!DataLoadStarted) {
+            if (typeof console !== 'undefined' && console.warn)
+                console.warn('[AstriaGraph] Cesium preload timed out; loading data')
+            StartDataLoad()
+        }
+    }, 5000)
+} else {
+    StartDataLoad()
+}
