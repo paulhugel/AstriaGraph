@@ -22,6 +22,99 @@ var DataSources = []
 var ApiBase = (typeof window !== 'undefined' && window.ASTRIAGRAPH_API_BASE) ? window.ASTRIAGRAPH_API_BASE.replace(/\/$/, '') : ''
 var UseLocalData = (ApiBase.length === 0)
 
+function StaticDataUrl(filter)
+{
+    return filter === "DEB" ? "assets/data/www_query_DEB.tsv" : "assets/data/www_query_NODEB.tsv"
+}
+
+function UseStaticFallback(reason)
+{
+    if (UseLocalData)
+        return false
+    UseLocalData = true
+    if (typeof console !== 'undefined' && console.warn)
+        console.warn('[AstriaGraph] Live API unavailable; using static data', reason)
+    return true
+}
+
+function ValidateTsvResponse(resp)
+{
+    var recs = resp.split(/\r\n|\n/).filter(function (line) { return line.length > 0 })
+    if (recs.length < 2)
+        throw new Error('TSV response has no data rows')
+
+    var hdrs = recs[0].split(/\t/)
+    var required = ['DataSource', 'NoradId', 'Epoch', 'SMA', 'Ecc', 'Inc', 'RAAN', 'ArgP', 'MeanAnom']
+    for (var r = 0; r < required.length; r++)
+        if (hdrs.indexOf(required[r]) === -1)
+            throw new Error('TSV response is missing required column ' + required[r])
+
+    var indexes = {
+        dataSource: hdrs.indexOf('DataSource'),
+        noradId: hdrs.indexOf('NoradId'),
+        epoch: hdrs.indexOf('Epoch'),
+        sma: hdrs.indexOf('SMA'),
+        ecc: hdrs.indexOf('Ecc'),
+        inc: hdrs.indexOf('Inc'),
+        raan: hdrs.indexOf('RAAN'),
+        argp: hdrs.indexOf('ArgP'),
+        meanAnom: hdrs.indexOf('MeanAnom')
+    }
+    for (var i = 1; i < recs.length; i++) {
+        var fields = recs[i].split(/\t/)
+        if (fields.length !== hdrs.length)
+            throw new Error('TSV response has malformed row ' + i)
+        if (!fields[indexes.dataSource] || Number(fields[indexes.noradId]) <= 0)
+            throw new Error('TSV response has invalid source or NORAD ID at row ' + i)
+        if (Number.isNaN(Date.parse(fields[indexes.epoch])))
+            throw new Error('TSV response has invalid epoch at row ' + i)
+        for (var n = 0; n < [indexes.sma, indexes.ecc, indexes.inc, indexes.raan, indexes.argp, indexes.meanAnom].length; n++) {
+            var value = Number(fields[[indexes.sma, indexes.ecc, indexes.inc, indexes.raan, indexes.argp, indexes.meanAnom][n]])
+            if (!Number.isFinite(value))
+                throw new Error('TSV response has invalid orbital value at row ' + i)
+        }
+        if (Number(fields[indexes.sma]) <= 0 || Number(fields[indexes.ecc]) < 0 || Number(fields[indexes.ecc]) >= 1)
+            throw new Error('TSV response has invalid orbit bounds at row ' + i)
+    }
+    return hdrs
+}
+
+function ValidateDataSourceResponse(resp)
+{
+    var recs = resp.split(/\r\n|\n/).filter(function (line) { return line.length > 0 })
+    if (recs.length < 2)
+        throw new Error('Data-source response has no rows')
+    var hdrs = recs[0].split(/\t/)
+    var sourceIndex = hdrs.indexOf('DataSource')
+    var nameIndex = hdrs.indexOf('Name')
+    if (sourceIndex === -1 || nameIndex === -1)
+        throw new Error('Data-source response is missing required columns')
+    for (var i = 1; i < recs.length; i++) {
+        var fields = recs[i].split(/\t/)
+        if (fields.length !== hdrs.length || !fields[sourceIndex] || !fields[nameIndex])
+            throw new Error('Data-source response has malformed row ' + i)
+    }
+    return { recs: recs, hdrs: hdrs }
+}
+
+// Analytics is optional: a blocked or unavailable CDN must not break the UI.
+function TrackAnalytics(eventName, properties)
+{
+    if (typeof window === 'undefined' || !window.amplitude ||
+        typeof window.amplitude.track !== 'function')
+        return
+
+    try
+    {
+        window.amplitude.track(eventName, properties)
+    }
+    catch (e)
+    {
+        if (typeof console !== 'undefined' && console.warn)
+            console.warn('[AstriaGraph] Analytics unavailable', e)
+    }
+}
+
 // Indicate data mode in UI badge if present
 ;(function () {
     try {
@@ -67,9 +160,18 @@ function GetDataSources()
     $.ajax({method : "GET", url : dsUrl,
     success : function(resp)
     {
-	var i, fields
-	var recs = resp.split(/\r\n|\n/)
-	var hdrs = recs[0].split(/\t/)
+	var i, fields, parsed
+	try {
+	    parsed = ValidateDataSourceResponse(resp)
+	} catch (validationError) {
+	    if (UseStaticFallback(validationError.message)) {
+	        GetDataSources()
+	        return
+	    }
+	    throw validationError
+	}
+	var recs = parsed.recs
+	var hdrs = parsed.hdrs
 
 	$("#DataSrcSelect").append($("<option>", {value : "ALL", text : "All"}))
 	for (i = 1; i < recs.length; i++)
@@ -94,6 +196,10 @@ function GetDataSources()
     {
         if (typeof console !== 'undefined' && console.error)
             console.error('[AstriaGraph] Failed to load data sources', { url: dsUrl, status: status, err: err, http: xhr && xhr.status })
+        if (UseStaticFallback({ url: dsUrl, status: status })) {
+            GetDataSources()
+            return
+        }
         try {
             var badge = window.document && window.document.getElementById('DataModeBadge')
             if (badge) {
@@ -112,7 +218,16 @@ function GetSpaceObjects(url, filt, OnDone)
     {
 	var fields, val, col, i, j
 	var recs = resp.split(/\r\n|\n/)
-	var hdrs = recs[0].split(/\t/)
+	var hdrs
+	try {
+	    hdrs = ValidateTsvResponse(resp)
+	} catch (validationError) {
+	    if (UseStaticFallback(validationError.message)) {
+	        GetSpaceObjects(StaticDataUrl(filt), "", OnDone)
+	        return
+	    }
+	    throw validationError
+	}
 
 	var N = 0
 	for (i in ObjData)
@@ -170,6 +285,10 @@ function GetSpaceObjects(url, filt, OnDone)
     {
         if (typeof console !== 'undefined' && console.error)
             console.error('[AstriaGraph] Failed to load space objects', { url: url + filt, status: status, err: err, http: xhr && xhr.status })
+        if (UseStaticFallback({ url: url + filt, status: status })) {
+            GetSpaceObjects(StaticDataUrl(filt), "", OnDone)
+            return
+        }
         try {
             var badge = window.document && window.document.getElementById('DataModeBadge')
             if (badge) {
@@ -459,10 +578,15 @@ function OnTrackClick()
 {
     if (Cesium.defined(CsView.selectedEntity))
     {
-	CsView.zoomTo(CsView.selectedEntity,
+	var ent = CsView.selectedEntity
+	var obj = ObjData[ent.id] || {}
+	CsView.zoomTo(ent,
 		      new Cesium.HeadingPitchRange(0, -Math.PI/2, 1E7)).
 	    then(function () {
-		DisplayOrbit(CsView.selectedEntity)
+		DisplayOrbit(ent)
+		TrackAnalytics('Space Object Selected', {
+		    data_source: obj.DataSource || '',
+		})
 	    })
     }
 }
@@ -478,6 +602,10 @@ $("#DataSrcSelect").selectmenu({width : "100%",
     select : function (event, ui)
     {
 	DisplayObjects(ObjData)
+	TrackAnalytics('Data Source Filtered', {
+	    data_source: ui.item.value,
+	    object_count: Object.keys(ObjData).length,
+	})
     }
 })
 
@@ -485,6 +613,10 @@ $("#OriginSelect").selectmenu({width : "100%",
     select : function (event, ui)
     {
 	DisplayObjects(ObjData)
+	TrackAnalytics('Origin Filtered', {
+	    country: ui.item.value,
+	    object_count: Object.keys(ObjData).length,
+	})
     }
 })
 
@@ -492,6 +624,10 @@ $("#RegimeSelect").selectmenu({width : "100%",
     select : function (event, ui)
     {
 	DisplayObjects(ObjData)
+	TrackAnalytics('Orbit Regime Filtered', {
+	    regime: ui.item.value,
+	    object_count: Object.keys(ObjData).length,
+	})
     }
 })
 
@@ -509,6 +645,10 @@ function OnToggleDebris()
     }
     else
 	DisplayObjects(ObjData)
+	TrackAnalytics('Debris Layer Toggled', {
+	    debris_visible: cb.checked,
+	    data_mode: UseLocalData ? 'static' : 'live',
+	})
 }
 
 function SetCesiumHome()
