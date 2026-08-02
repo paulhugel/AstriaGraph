@@ -484,9 +484,7 @@ function OnTrackClick()
 	    then(function () {
 		DisplayOrbit(ent)
 		TrackAnalytics('Space Object Selected', {
-		    object_name: obj.Name || ent.name || '',
 		    data_source: obj.DataSource || '',
-		    norad_id: obj.NoradId || '',
 		})
 	    })
     }
