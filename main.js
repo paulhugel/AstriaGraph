@@ -748,9 +748,16 @@ function StartDataLoad()
     GetDataSources()
 }
 
-var preload = Cesium.Transforms.preloadIcrfFixed(new Cesium.TimeInterval({
-    start: new Cesium.JulianDate(J2000Epoch - JulCent),
-    stop: new Cesium.JulianDate(J2000Epoch + JulCent),}))
+var preload
+try {
+    preload = Cesium.Transforms.preloadIcrfFixed(new Cesium.TimeInterval({
+        start: new Cesium.JulianDate(J2000Epoch - JulCent),
+        stop: new Cesium.JulianDate(J2000Epoch + JulCent),}))
+} catch (err) {
+    if (typeof console !== 'undefined' && console.warn)
+        console.warn('[AstriaGraph] Cesium preload unavailable; loading data', err)
+    StartDataLoad()
+}
 if (preload && typeof preload.then === 'function') {
     preload.then(StartDataLoad, function (err) {
         if (typeof console !== 'undefined' && console.warn)
