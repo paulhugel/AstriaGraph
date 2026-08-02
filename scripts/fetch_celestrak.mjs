@@ -19,6 +19,7 @@
 
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const MU_EARTH = 3.986004418e14 // m^3/s^2
 const OUT_DIR = path.resolve(process.cwd(), 'assets', 'data')
@@ -84,8 +85,32 @@ async function fetchJson(url) {
 function validateRecords(records, label) {
   if (!Array.isArray(records) || records.length === 0)
     throw new Error(`No ${label} records were fetched; refusing to publish datasets`)
-  if (records.some(record => !record || typeof record !== 'object'))
-    throw new Error(`Invalid ${label} record received; refusing to publish datasets`)
+  for (const [index, record] of records.entries()) {
+    if (!record || typeof record !== 'object')
+      throw new Error(`Invalid ${label} record at index ${index}; refusing to publish datasets`)
+    const requiredNumericFields = [
+      'NORAD_CAT_ID', 'MEAN_MOTION', 'ECCENTRICITY', 'INCLINATION',
+      'RA_OF_ASC_NODE', 'ARG_OF_PERICENTER', 'MEAN_ANOMALY'
+    ]
+    const missing = requiredNumericFields.filter(field => {
+      const value = record[field]
+      return value === undefined || value === null || value === '' ||
+        !Number.isFinite(Number(value))
+    })
+    if (missing.length > 0 || !record.EPOCH) {
+      const fields = missing.concat(!record.EPOCH ? ['EPOCH'] : [])
+      throw new Error(
+        `Invalid ${label} record at index ${index}; missing/invalid ${fields.join(', ')}`
+      )
+    }
+    const eccentricity = Number(record.ECCENTRICITY)
+    if (eccentricity < 0 || eccentricity >= 1)
+      throw new Error(`Invalid ${label} record at index ${index}; Eccentricity must be in [0, 1)`)
+    if (Number(record.MEAN_MOTION) <= 0)
+      throw new Error(`Invalid ${label} record at index ${index}; MEAN_MOTION must be positive`)
+    if (Number.isNaN(Date.parse(record.EPOCH)))
+      throw new Error(`Invalid ${label} record at index ${index}; EPOCH must be a valid date`)
+  }
 }
 
 async function publishPair(nodebContents, debContents) {
@@ -164,7 +189,11 @@ async function main() {
   console.log('Done.')
 }
 
-main().catch(err => {
-  console.error('[ERROR]', err)
-  process.exit(1)
-})
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch(err => {
+    console.error('[ERROR]', err)
+    process.exit(1)
+  })
+}
+
+export { HEADER, rowFromCelestrak, validateRecords }
