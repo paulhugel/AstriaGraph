@@ -81,22 +81,47 @@ async function fetchJson(url) {
   return res.json()
 }
 
-async function writeAtomic(filePath, contents) {
-  const tempPath = `${filePath}.tmp-${process.pid}`
-  try {
-    await fs.writeFile(tempPath, contents)
-    await fs.rename(tempPath, filePath)
-  } catch (error) {
-    await fs.rm(tempPath, { force: true }).catch(() => {})
-    throw error
-  }
-}
-
 function validateRecords(records, label) {
   if (!Array.isArray(records) || records.length === 0)
     throw new Error(`No ${label} records were fetched; refusing to publish datasets`)
   if (records.some(record => !record || typeof record !== 'object'))
     throw new Error(`Invalid ${label} record received; refusing to publish datasets`)
+}
+
+async function publishPair(nodebContents, debContents) {
+  const parentDir = path.dirname(OUT_DIR)
+  const stagingDir = await fs.mkdtemp(path.join(parentDir, '.astria-refresh-'))
+  const stagedDataDir = path.join(stagingDir, 'data')
+  const backupDir = await fs.mkdtemp(path.join(parentDir, '.astria-previous-'))
+  const backupDataDir = path.join(backupDir, 'data')
+  let oldDataMoved = false
+  let newDataPublished = false
+  let rollbackFailed = false
+
+  try {
+    await fs.cp(OUT_DIR, stagedDataDir, { recursive: true })
+    await fs.writeFile(path.join(stagedDataDir, 'www_query_NODEB.tsv'), nodebContents)
+    await fs.writeFile(path.join(stagedDataDir, 'www_query_DEB.tsv'), debContents)
+    await fs.rename(OUT_DIR, backupDataDir)
+    oldDataMoved = true
+    await fs.rename(stagedDataDir, OUT_DIR)
+    newDataPublished = true
+    await fs.rm(backupDir, { recursive: true, force: true })
+  } catch (error) {
+    if (newDataPublished)
+      await fs.rm(OUT_DIR, { recursive: true, force: true })
+    if (oldDataMoved)
+      await fs.rename(backupDataDir, OUT_DIR)
+        .catch(restoreError => {
+          rollbackFailed = true
+          throw new Error(`Dataset pair rollback failed: ${restoreError.message}`)
+        })
+    throw new Error(`Dataset pair publication failed safely: ${error.message}`)
+  } finally {
+    await fs.rm(stagingDir, { recursive: true, force: true })
+    if (!newDataPublished && !rollbackFailed)
+      await fs.rm(backupDir, { recursive: true, force: true })
+  }
 }
 
 async function main() {
@@ -119,9 +144,10 @@ async function main() {
     const url = `https://celestrak.org/NORAD/elements/gp.php?GROUP=${encodeURIComponent(g)}&FORMAT=json`
     try {
       const arr = await fetchJson(url)
+      validateRecords(arr, `debris group ${g}`)
       debrisAll.push(...arr)
     } catch (e) {
-      console.warn(`[WARN] Skipping debris group ${g}: ${e.message}`)
+      throw new Error(`Required debris group ${g} failed; preserving existing datasets: ${e.message}`)
     }
   }
   if (debrisAll.length === 0) {
@@ -131,8 +157,7 @@ async function main() {
 
   const nodebLines = [HEADER, ...active.map(rowFromCelestrak)]
   const debLines = [HEADER, ...debrisAll.map(rowFromCelestrak)]
-  await writeAtomic(path.join(OUT_DIR, 'www_query_NODEB.tsv'), nodebLines.join('\n'))
-  await writeAtomic(path.join(OUT_DIR, 'www_query_DEB.tsv'), debLines.join('\n'))
+  await publishPair(nodebLines.join('\n'), debLines.join('\n'))
 
   console.log(`Wrote ${active.length} active → www_query_NODEB.tsv`)
   console.log(`Wrote ${debrisAll.length} debris → www_query_DEB.tsv`)
