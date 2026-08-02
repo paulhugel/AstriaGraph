@@ -322,16 +322,23 @@ function DisplayObjects(D)
     }
     CsOrbitEnt = []
 
-    var active = []
-    for (var s in D)
-    {
+	var active = []
+	var statusKnown = []
+	for (var s in D)
+	{
 	trk = D[s]
 	if (trk["DataSource"] == "UCS")
+	{
 	    active.push(String(trk["NoradId"]))
+	    statusKnown.push(String(trk["NoradId"]))
+	}
 	if (trk["DataSource"] == "USSTRATCOM" &&
 	    (String(trk["BirthDate"]).length > 4 && Number(String(trk["BirthDate"]).slice(0, 4)) >= 2017) &&
 	    trk["Name"].search("DEB") == -1 && trk["Name"].search("R/B") == -1)
+	{
 	    active.push(String(trk["NoradId"]))
+	    statusKnown.push(String(trk["NoradId"]))
+	}
     }
 
     for (s in D)
@@ -388,7 +395,9 @@ function DisplayObjects(D)
 	trk["Elem"]["mmo"] = Math.sqrt(EGM96_mu/(_sma*_sma*_sma))
 	trk["Elem"]["MeanAnom"] = (Number(trk["Elem"]["MeanAnom"]) + trk["Elem"]["mmo"]*t*86400) % TwoPi
 
-	if (active.indexOf(trk["NoradId"]) == -1)
+	if (statusKnown.indexOf(String(trk["NoradId"])) == -1)
+	    col = Cesium.Color.GOLD
+	else if (active.indexOf(trk["NoradId"]) == -1)
 	    col = Cesium.Color.CYAN
 	else
 	    col = Cesium.Color.DARKORANGE
