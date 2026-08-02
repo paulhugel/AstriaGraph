@@ -134,8 +134,11 @@
       }
 
       #InputsDiv {
-      position: absolute; top: 5px; left: 5px; width: 60%;
+      position: absolute; top: 5px; left: 5px; width: calc(100% - 10px);
+      display: flex; flex-wrap: nowrap; align-items: flex-start;
       }
+
+      #InputsDiv > div { float: none !important; flex: 0 0 auto; }
 
       #DisclaimerDiv {
       position: absolute; bottom: 1%; left: 15%; width: 85%;
