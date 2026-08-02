@@ -262,6 +262,23 @@
 
       gtag("config", "UA-97324668-2");
     </script>
+
+    <script src="https://cdn.amplitude.com/libs/unified-2.0.0-min.js.gz"></script>
+    <script>
+      if (window.amplitude && typeof window.amplitude.initAll === "function") {
+        try {
+          amplitude.initAll('41606f3a0e61fcb8cf340dcda6d98879', {
+            analytics: {
+              remoteConfig: { fetchRemoteConfig: false },
+              autocapture: false,
+            },
+          });
+        } catch (e) {
+          if (window.console && console.warn)
+            console.warn('[AstriaGraph] Analytics initialization unavailable', e);
+        }
+      }
+    </script>
     
     <meta name = "keywords" content = "Space situational awareness, SSA, Space traffic management, STM,
 				       space debris, space garbage, space junk, orbital debris, orbital garbage,

@@ -22,6 +22,24 @@ var DataSources = []
 var ApiBase = (typeof window !== 'undefined' && window.ASTRIAGRAPH_API_BASE) ? window.ASTRIAGRAPH_API_BASE.replace(/\/$/, '') : ''
 var UseLocalData = (ApiBase.length === 0)
 
+// Analytics is optional: a blocked or unavailable CDN must not break the UI.
+function TrackAnalytics(eventName, properties)
+{
+    if (typeof window === 'undefined' || !window.amplitude ||
+        typeof window.amplitude.track !== 'function')
+        return
+
+    try
+    {
+        window.amplitude.track(eventName, properties)
+    }
+    catch (e)
+    {
+        if (typeof console !== 'undefined' && console.warn)
+            console.warn('[AstriaGraph] Analytics unavailable', e)
+    }
+}
+
 // Indicate data mode in UI badge if present
 ;(function () {
     try {
@@ -459,10 +477,17 @@ function OnTrackClick()
 {
     if (Cesium.defined(CsView.selectedEntity))
     {
-	CsView.zoomTo(CsView.selectedEntity,
+	var ent = CsView.selectedEntity
+	var obj = ObjData[ent.id] || {}
+	CsView.zoomTo(ent,
 		      new Cesium.HeadingPitchRange(0, -Math.PI/2, 1E7)).
 	    then(function () {
-		DisplayOrbit(CsView.selectedEntity)
+		DisplayOrbit(ent)
+		TrackAnalytics('Space Object Selected', {
+		    object_name: obj.Name || ent.name || '',
+		    data_source: obj.DataSource || '',
+		    norad_id: obj.NoradId || '',
+		})
 	    })
     }
 }
@@ -478,6 +503,10 @@ $("#DataSrcSelect").selectmenu({width : "100%",
     select : function (event, ui)
     {
 	DisplayObjects(ObjData)
+	TrackAnalytics('Data Source Filtered', {
+	    data_source: ui.item.value,
+	    object_count: Object.keys(ObjData).length,
+	})
     }
 })
 
@@ -485,6 +514,10 @@ $("#OriginSelect").selectmenu({width : "100%",
     select : function (event, ui)
     {
 	DisplayObjects(ObjData)
+	TrackAnalytics('Origin Filtered', {
+	    country: ui.item.value,
+	    object_count: Object.keys(ObjData).length,
+	})
     }
 })
 
@@ -492,6 +525,10 @@ $("#RegimeSelect").selectmenu({width : "100%",
     select : function (event, ui)
     {
 	DisplayObjects(ObjData)
+	TrackAnalytics('Orbit Regime Filtered', {
+	    regime: ui.item.value,
+	    object_count: Object.keys(ObjData).length,
+	})
     }
 })
 
@@ -509,6 +546,10 @@ function OnToggleDebris()
     }
     else
 	DisplayObjects(ObjData)
+	TrackAnalytics('Debris Layer Toggled', {
+	    debris_visible: cb.checked,
+	    data_mode: UseLocalData ? 'static' : 'live',
+	})
 }
 
 function SetCesiumHome()
