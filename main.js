@@ -79,6 +79,24 @@ function ValidateTsvResponse(resp)
     return hdrs
 }
 
+function ValidateDataSourceResponse(resp)
+{
+    var recs = resp.split(/\r\n|\n/).filter(function (line) { return line.length > 0 })
+    if (recs.length < 2)
+        throw new Error('Data-source response has no rows')
+    var hdrs = recs[0].split(/\t/)
+    var sourceIndex = hdrs.indexOf('DataSource')
+    var nameIndex = hdrs.indexOf('Name')
+    if (sourceIndex === -1 || nameIndex === -1)
+        throw new Error('Data-source response is missing required columns')
+    for (var i = 1; i < recs.length; i++) {
+        var fields = recs[i].split(/\t/)
+        if (fields.length !== hdrs.length || !fields[sourceIndex] || !fields[nameIndex])
+            throw new Error('Data-source response has malformed row ' + i)
+    }
+    return { recs: recs, hdrs: hdrs }
+}
+
 // Analytics is optional: a blocked or unavailable CDN must not break the UI.
 function TrackAnalytics(eventName, properties)
 {
@@ -142,9 +160,18 @@ function GetDataSources()
     $.ajax({method : "GET", url : dsUrl,
     success : function(resp)
     {
-	var i, fields
-	var recs = resp.split(/\r\n|\n/)
-	var hdrs = recs[0].split(/\t/)
+	var i, fields, parsed
+	try {
+	    parsed = ValidateDataSourceResponse(resp)
+	} catch (validationError) {
+	    if (UseStaticFallback(validationError.message)) {
+	        GetDataSources()
+	        return
+	    }
+	    throw validationError
+	}
+	var recs = parsed.recs
+	var hdrs = parsed.hdrs
 
 	$("#DataSrcSelect").append($("<option>", {value : "ALL", text : "All"}))
 	for (i = 1; i < recs.length; i++)
