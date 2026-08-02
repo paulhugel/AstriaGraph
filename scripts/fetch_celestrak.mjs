@@ -90,7 +90,9 @@ async function main() {
   const nodebLines = [HEADER, ...active.map(rowFromCelestrak)]
   await fs.writeFile(path.join(OUT_DIR, 'www_query_NODEB.tsv'), nodebLines.join('\n'))
 
-  // Debris: pick a few large debris clouds as a demo; adjust groups as needed
+  // Debris: use the named CelesTrak groups that are currently supported.
+  // An invalid group must not silently replace the checked-in dataset with
+  // a header-only file.
   const debrisGroups = [
     'iridium-33-debris',
     'cosmos-2251-debris'
@@ -104,6 +106,9 @@ async function main() {
     } catch (e) {
       console.warn(`[WARN] Skipping debris group ${g}: ${e.message}`)
     }
+  }
+  if (debrisAll.length === 0) {
+    throw new Error('No debris records were fetched; refusing to overwrite www_query_DEB.tsv')
   }
   const debLines = [HEADER, ...debrisAll.map(rowFromCelestrak)]
   await fs.writeFile(path.join(OUT_DIR, 'www_query_DEB.tsv'), debLines.join('\n'))
