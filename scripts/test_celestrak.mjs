@@ -30,6 +30,7 @@ const mainSource = fs.readFileSync(new URL('../main.js', import.meta.url), 'utf8
 assert.match(mainSource, /function UseStaticFallback\(/)
 assert.match(mainSource, /function ValidateTsvResponse\(/)
 assert.match(mainSource, /function ValidateDataSourceResponse\(/)
+assert.match(mainSource, /sourceIndex = hdrs.indexOf\('Code'\)/)
 assert.match(mainSource, /function StartDataLoad\(/)
 assert.match(mainSource, /DataLoadStarted/)
 assert.match(mainSource, /preload timed out/)
