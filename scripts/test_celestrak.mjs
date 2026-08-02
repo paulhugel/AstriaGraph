@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
+import fs from 'node:fs'
 import { HEADER, rowFromCelestrak, validateRecords } from './fetch_celestrak.mjs'
 
 const validRecord = {
@@ -24,4 +25,9 @@ assert.equal(row.length, HEADER.split('\t').length)
 assert.equal(row[0], 'CELESTRAK')
 assert.equal(row[4], '100178')
 assert.equal(row[18], validRecord.EPOCH)
+
+const mainSource = fs.readFileSync(new URL('../main.js', import.meta.url), 'utf8')
+assert.match(mainSource, /function UseStaticFallback\(/)
+assert.match(mainSource, /function ValidateTsvResponse\(/)
+assert.doesNotMatch(mainSource, /object_name:\s|norad_id:\s/)
 console.log('CelesTrak validation fixtures passed')
