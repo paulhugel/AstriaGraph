@@ -12,6 +12,8 @@ const validRecord = {
 validateRecords([validRecord], 'fixture')
 assert.throws(() => validateRecords([], 'empty'), /No empty records/)
 assert.throws(() => validateRecords([{ ...validRecord, NORAD_CAT_ID: undefined }], 'missing-id'), /NORAD_CAT_ID/)
+assert.throws(() => validateRecords([{ ...validRecord, NORAD_CAT_ID: 0 }], 'zero-id'), /positive/)
+assert.throws(() => validateRecords([{ ...validRecord, NORAD_CAT_ID: -1 }], 'negative-id'), /positive/)
 assert.throws(() => validateRecords([{ ...validRecord, ECCENTRICITY: 1 }], 'bad-eccentricity'), /Eccentricity/)
 assert.throws(() => validateRecords([{ ...validRecord, MEAN_MOTION: 'not-a-number' }], 'bad-orbit'), /MEAN_MOTION/)
 assert.throws(() => validateRecords([{ ...validRecord, MEAN_MOTION: 0 }], 'zero-motion'), /positive/)

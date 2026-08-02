@@ -104,6 +104,8 @@ function validateRecords(records, label) {
       )
     }
     const eccentricity = Number(record.ECCENTRICITY)
+    if (Number(record.NORAD_CAT_ID) <= 0)
+      throw new Error(`Invalid ${label} record at index ${index}; NORAD_CAT_ID must be positive`)
     if (eccentricity < 0 || eccentricity >= 1)
       throw new Error(`Invalid ${label} record at index ${index}; Eccentricity must be in [0, 1)`)
     if (Number(record.MEAN_MOTION) <= 0)
