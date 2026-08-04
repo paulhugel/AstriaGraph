@@ -29,10 +29,15 @@ jobs:
           node --input-type=module -e '
             import fs from "node:fs";
             for (const file of ["assets/data/www_query_NODEB.tsv", "assets/data/www_query_DEB.tsv"]) {
-              const lines = fs.readFileSync(file, "utf8").trimEnd().split(/\r?\n/);
+              // Split on newlines and drop only genuinely empty lines (e.g. a
+              // trailing blank line from a final newline) rather than
+              // trimEnd()-ing the whole blob, which would also eat a real
+              // last row's trailing empty tab-delimited columns (e.g. a
+              // debris row whose OpsStatusCode/ObjectType are blank).
+              const lines = fs.readFileSync(file, "utf8").split(/\r?\n/).filter(l => l.length > 0);
                const width = lines[0].split("\t").length;
                const ids = new Set();
-               if (width !== 25 || lines.length < 2) throw new Error(`${file}: invalid shape`);
+               if (width !== 27 || lines.length < 2) throw new Error(`${file}: invalid shape`);
                for (const line of lines.slice(1)) {
                  const cells = line.split("\t");
                  if (cells.length !== width) throw new Error(`${file}: malformed row`);
