@@ -260,6 +260,31 @@ Committed (e5de9af), pushed, PR opened with `--repo paulhugel/AstriaGraph`
 passed explicitly from the start this time (lesson from PR1 applied) — no
 repo-targeting mistake. CI (`validate`) passed on the first push.
 
+### 2026-08-04 — Debris/rocket-body loading verified live (Claude Code)
+
+User asked to specifically confirm rocket bodies and debris load and render
+correctly (the `www_query_DEB.tsv` path, gated behind the "Display rocket
+bodies and debris" checkbox, `OnToggleDebris`/`DebrisLoaded` in `main.js`).
+Re-served this worktree, loaded in browser, confirmed via network requests
+that both `www_query_NODEB.tsv` and `www_query_DEB.tsv` returned 200, and
+inspected `ObjData`/entity colors directly via `javascript_tool`:
+
+- `ObjData` total = 16,981 = 16,276 (NODEB) + 705 (DEB) exactly — confirms
+  the debris file fully loaded into the same object store.
+- 703 objects with `"DEB"` in `Name` → all 703 render exactly Gray
+  (`rgb(128,128,128)`).
+- 5 objects with `"R/B"` in `Name` split 2 MediumOrchid / 3 DarkOrange — at
+  first glance looked like 3 miscolored rocket bodies, but investigated and
+  it's correct: the 3 DarkOrange ones (`CELESTIS-02 & TAURUS R/B`, `RS-44 &
+  BREEZE-KM R/B`, `IPM 2 & BREEZE-M R/B`) are payload+upper-stage combo
+  objects that CelesTrak's own SATCAT classifies `ObjectType: "PAY"` — the
+  string `"R/B"` only appears in the descriptive name, not the
+  classification. PR2's `ObjectType`-priority design is working exactly as
+  intended here: it correctly ignores the misleading Name substring in favor
+  of SATCAT's authoritative type, which the old legacy Name-only heuristic
+  could not do (it would have miscolored these three).
+- No console errors.
+
 ### Next step
 
 PR2 (paulhugel/AstriaGraph#11) is open, CI passing, awaiting review/merge.
