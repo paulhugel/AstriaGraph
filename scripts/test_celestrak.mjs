@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import assert from 'node:assert/strict'
 import fs from 'node:fs'
-import { HEADER, rowFromCelestrak, validateRecords } from './fetch_celestrak.mjs'
+import { HEADER, rowFromCelestrak, validateRecords, fetchSatcatActiveMap } from './fetch_celestrak.mjs'
 
 const validRecord = {
   OBJECT_NAME: 'TESTSAT', OBJECT_ID: '2026-001A', NORAD_CAT_ID: 100178,
@@ -22,9 +22,85 @@ assert.throws(() => validateRecords([{ ...validRecord, EPOCH: 'not-a-date' }], '
 
 const row = rowFromCelestrak(validRecord).split('\t')
 assert.equal(row.length, HEADER.split('\t').length)
+assert.equal(row.length, 27)
 assert.equal(row[0], 'CELESTRAK')
 assert.equal(row[4], '100178')
 assert.equal(row[18], validRecord.EPOCH)
+assert.equal(row[5], '') // BirthDate blank without SATCAT enrichment
+assert.equal(row[6], '') // Operator blank without SATCAT enrichment
+assert.equal(row[25], '') // OpsStatusCode blank without SATCAT enrichment
+assert.equal(row[26], '') // ObjectType blank without SATCAT enrichment
+
+// SATCAT enrichment: join hit populates BirthDate/Operator/OpsStatusCode/ObjectType
+const satcatMap = new Map([
+  ['100178', { LAUNCH_DATE: '2026-07-01', OWNER: 'US', OPS_STATUS_CODE: '+', OBJECT_TYPE: 'PAY' }],
+])
+const enrichedRow = rowFromCelestrak(validRecord, satcatMap).split('\t')
+assert.equal(enrichedRow.length, 27)
+assert.equal(enrichedRow[5], '2026-07-01')
+assert.equal(enrichedRow[6], 'US')
+assert.equal(enrichedRow[25], '+')
+assert.equal(enrichedRow[26], 'PAY')
+
+// SATCAT join miss: NORAD ID not present in the map leaves fields blank, not throwing
+const missRow = rowFromCelestrak(validRecord, new Map()).split('\t')
+assert.equal(missRow.length, 27)
+assert.equal(missRow[5], '')
+assert.equal(missRow[6], '')
+assert.equal(missRow[25], '')
+assert.equal(missRow[26], '')
+
+// A SATCAT record missing individual fields (e.g. unrecognized/blank OPS_STATUS_CODE)
+// must not throw, and should fall back to blank for that field only.
+const partialSatcatMap = new Map([['100178', { LAUNCH_DATE: '2026-07-01' }]])
+const partialRow = rowFromCelestrak(validRecord, partialSatcatMap).split('\t')
+assert.equal(partialRow[5], '2026-07-01')
+assert.equal(partialRow[6], '')
+assert.equal(partialRow[25], '')
+assert.equal(partialRow[26], '')
+
+// SATCAT fetch failure must degrade gracefully: fetchSatcatActiveMap() should
+// resolve to an empty Map, not throw and not block publication of NODEB.
+{
+  const realFetch = global.fetch
+  global.fetch = async () => ({ ok: false, status: 500 })
+  try {
+    const map = await fetchSatcatActiveMap()
+    assert.ok(map instanceof Map)
+    assert.equal(map.size, 0)
+  } finally {
+    global.fetch = realFetch
+  }
+}
+
+// A malformed (non-array) SATCAT response must also degrade gracefully.
+{
+  const realFetch = global.fetch
+  global.fetch = async () => ({ ok: true, status: 200, json: async () => ({ not: 'an array' }) })
+  try {
+    const map = await fetchSatcatActiveMap()
+    assert.ok(map instanceof Map)
+    assert.equal(map.size, 0)
+  } finally {
+    global.fetch = realFetch
+  }
+}
+
+// A successful SATCAT response is keyed by NORAD_CAT_ID as a string.
+{
+  const realFetch = global.fetch
+  global.fetch = async () => ({
+    ok: true, status: 200,
+    json: async () => ([{ NORAD_CAT_ID: 900, OPS_STATUS_CODE: '+', OBJECT_TYPE: 'PAY' }]),
+  })
+  try {
+    const map = await fetchSatcatActiveMap()
+    assert.equal(map.size, 1)
+    assert.equal(map.get('900').OPS_STATUS_CODE, '+')
+  } finally {
+    global.fetch = realFetch
+  }
+}
 
 const mainSource = fs.readFileSync(new URL('../main.js', import.meta.url), 'utf8')
 assert.match(mainSource, /function UseStaticFallback\(/)
