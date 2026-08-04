@@ -578,3 +578,139 @@ after this fix): Active (real, 16,274), Rocket body (real, 2), Debris
 Inactive (0, structurally unreachable from available sources) and
 Uncategorized (0, sources not wired up) remain unpopulated - not bugs,
 confirmed data-availability limits.
+
+### 2026-08-04 — Exhaustive real-Inactive-status source research, continued: DISCOSweb confirmed viable (Claude Code)
+
+Follow-up to the "Root cause 1" research logged above. After the
+ObjectType fix (PR13), user asked to keep searching for a real source of
+Inactive-satellite status specifically, rather than accept the heuristic
+or drop it. Checked every remaining candidate exhaustively, read-only,
+before finding one that actually works:
+
+- **UCS Satellite Database** (`ucsusa.org/.../satellite-database`): only
+  ~7,560 *active* satellites tracked - not an active-vs-inactive source at
+  all (already ruled out earlier in this doc, reconfirmed).
+- **ESA Space Debris User Portal, general account**: has a real
+  `active`/`inactive` taxonomy conceptually, but DISCOS access is
+  separately gated - confirmed again via the user's real account: DISCOS
+  not in the Tools menu (DRAMA/MASTER/ORIUNDO/PROOF/SOLMAG/iOTA/LCA
+  Database only). MASTER itself, read directly from its own description,
+  is a *statistical debris/meteoroid flux environment model* (fragmentation
+  events, SRM firings, meteoroid streams, down to micrometer particles) -
+  not a per-object catalog, wrong kind of data entirely regardless of
+  access.
+- **ESA Space Environment Statistics page**
+  (`sdup.esoc.esa.int/discosweb/statistics/`): real, current (updated
+  31 Jul 2026) aggregate numbers - ~27,490 satellites launched, ~18,840
+  still in space, **~16,100 still functioning** - confirms real
+  Active/Inactive data exists somewhere in ESA's system, but this page is
+  static HTML with no backing API (confirmed via
+  `performance.getEntriesByType('resource')` - no JSON/XHR calls at all).
+- **JSC Vimpel** (`spacedata.vimpel.ru`): real public data portal exists
+  (JSC Vimpel + Keldysh Institute of Applied Mathematics), confirmed via
+  the actual ESA Space Debris Environment Report's own "Data sources"
+  section (USSTRATCOM TLEs + Vimpel dataset + RAE tables feed DISCOS's
+  orbital data; DISCOS itself supplies classification/mission data on
+  top). JSC Vimpel is explicitly Russia's Missile Attack Warning System
+  operator - user flagged the defense affiliation as something to weigh
+  deliberately rather than a purely technical call. Not pursued further.
+  Their catalog focus is GEO/HEO anyway (explicitly "least investigated"
+  per their own framing), not general LEO coverage.
+- **LeoLabs**: `platform.leolabs.space/visualizations/leo` is a real,
+  free, public, no-login 3D visualization (27,498 live objects, Active/
+  Inactive/Rocket Body/Debris/Unknown categories shown). Found its actual
+  data file (`platform-assets.leolabs.space/visualization/static.json.gz`,
+  publicly fetchable, no auth) but it turned out to be radar-instrument
+  positions for the 3D rendering only, not object data - the real object
+  stream is gated behind an authenticated backend (`ApiKeysToUiApiKeys`
+  found in their bundled JS). LeoLabs also sells this same category of
+  data as a formal paid API product (AWS Marketplace listing) - no public
+  tier, "contact sales." Not usable without a paid commercial relationship.
+- **Privateer Wayfinder** (`wayfinder.privateer.com`): found genuinely
+  real, current, comprehensive, *directly fetchable with zero
+  authentication* per-object data at
+  `wayfinder.privateer.com/data/object-data-{0-11}.json` - **46,844
+  objects**, real `status` field (`Active: 16,693` / `Inactive: 30,151`),
+  full orbital elements, actual TLE lines, aggregating from `vimpel`
+  (14,331), `space-track` (32,248), `see-sat` (165), `planet` (100) - the
+  exact same legacy source list already in this app's own
+  `www_data_sources.tsv`. However: could not find any published terms of
+  use covering reuse of this specific data (checked `privateer.com`
+  directly, tried common ToS/privacy-policy URLs - 404s, searched - no
+  hits for Privateer Space Inc. specifically, only unrelated companies
+  with similar names). Privateer sells the same category of data as a
+  formal paid product (AWS Marketplace API - CDMs, ephemeris, ground
+  passes). Technically-fetchable-without-login was judged not the same as
+  licensed-for-reuse, especially given their clear commercial interest in
+  this exact data category - **not integrated, would need direct outreach
+  to Privateer first**, same category of caution as LeoLabs.
+
+**Breakthrough: DISCOSweb (`discosweb.esoc.esa.int`) - a separate account
+system from the general ESA Space Debris User Portal, which the user
+already has real, working access to.** This is NOT the same login as the
+`sdup.esoc.esa.int` portal account checked earlier (that one lacked DISCOS
+access) - DISCOSweb has its own account system at
+`account.sdo.esoc.esa.int`. Confirmed thoroughly, read-only, all via the
+user's own authenticated session:
+
+- Real `Objects` table with a genuine boolean `Active` filter (`All`/
+  `Yes`/`No`). Filtering to `Yes` gives exactly **805 pages x 20 = 16,100
+  objects** - an exact match to the ESA statistics page's independently-
+  published "~16,100 still functioning" figure. This is validated,
+  authoritative data, not a guess.
+- Fields include `satno` (formally documented in the OpenAPI spec as
+  *"Satellite Catalogue Number assigned by USSPACECOM"* - i.e. NORAD ID,
+  the same join key already used for CelesTrak/Space-Track/SATCAT joins
+  in this codebase), `cosparId`, `vimpelId`, `objectClass`, `mission`,
+  `mass`, `shape`/dimensions, `firstEpoch`, `predDecayDate`.
+- **Important limitation, confirmed via both the UI and the formal OpenAPI
+  schema's `relationships` block**: DISCOS objects relate to `launch`,
+  `reentry`, `initialOrbits`, `destinationOrbits`, `states`, `operators`,
+  `tags`, `constellations` - **no relationship to any live/current
+  orbital-element source**. The "Initial Orbits" table is exactly that -
+  orbit at launch/insertion (epochs from the 1960s for old objects), not
+  current ephemeris. DISCOS supplies real *status*, not current *position*
+  data. Would still need CelesTrak or Space-Track for current orbital
+  elements, joined by `satno`, same two-source-join pattern already built
+  for CelesTrak+SATCAT (PR1) and now for CelesTrak/Space-Track+DISCOS.
+- Real, documented, production API confirmed via the user's own
+  `openapi-v2.yml` download (read via `Read`/`grep`, not assumed):
+  - Auth: `Authorization: Bearer <token>` + required
+    `DiscosWeb-Api-Version: 2` header; tokens created at
+    `discosweb.esoc.esa.int/tokens` - **a credential, same handling rules
+    as Space-Track apply if this is ever implemented** (user creates it,
+    supplies via env var, never typed/read by the assistant).
+  - Real rate limiting via `X-RateLimit-Limit`/`X-RateLimit-Remaining`/
+    `X-RateLimit-Reset` response headers.
+  - `page[size]` max 100 - fetching all ~16,100 active objects would need
+    ~161 paginated requests at max page size.
+  - RQL-style filter DSL confirmed in full: `eq`, `ne`, `lt`, `le`, `gt`,
+    `ge`, `in`, `out`, `contains`, `excludes`, `icontains`, `iexcludes`,
+    `and`/`or`/grouping - e.g. `eq(objectClass,Payload)` combined with an
+    active-status filter is directly expressible.
+  - `active` field formally confirmed nullable boolean in the schema
+    (`type: [boolean, 'null']`), matching the UI exactly.
+
+**Status: researched and validated, not implemented.** This is a real,
+credible path to finally closing the Inactive/Cyan gap that's been
+open all session - but it's a genuine new architecture decision (new
+credentialed API, another join in the fetch pipeline, another dataset in
+`main.js`'s color logic) on the same scale as the original Space-Track
+debris work (PR4/#12). Explicitly not started without further direction,
+given how much went sideways elsewhere in this session (see the WordPress
+editing incident below, unrelated to this repo but same session) - the
+user was asked directly whether to proceed to implementation and chose to
+pause for now.
+
+### 2026-08-04 — Unrelated aside: nko.org blog post accuracy (not part of this repo)
+
+Also this session, at the user's request, corrected an inaccurate blog
+post at `nko.org/space-junk-tracker/` (a different site, WordPress, not
+this repository) claiming AstriaGraph tracks "inactive satellites" and is
+"live" - neither accurate per the findings above. Multiple editing
+mistakes were made using browser automation on the WordPress Gutenberg
+editor (corrupted paragraph text, broken hyperlink boundaries), corrected
+directly by the user. Final published text is accurate as of this
+writing. Not tracked further in this doc since it's outside this
+repository's scope - noted here only so a future session has context if
+the user references it.
