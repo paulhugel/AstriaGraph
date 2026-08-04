@@ -395,19 +395,30 @@ function DisplayObjects(D)
 	trk["Elem"]["mmo"] = Math.sqrt(EGM96_mu/(_sma*_sma*_sma))
 	trk["Elem"]["MeanAnom"] = (Number(trk["Elem"]["MeanAnom"]) + trk["Elem"]["mmo"]*t*86400) % TwoPi
 
-	if (trk["DataSource"] == "CelesTrak" && trk["OpsStatusCode"])
+	if (trk["ObjectType"] == "DEB" || trk["ObjectType"] == "DEBRIS")
 	{
-	    // CelesTrak rows carry SATCAT-derived ObjectType/OpsStatusCode (see
+	    // Real ObjectType classification takes priority whenever present,
+	    // regardless of DataSource - it's authoritative per-object data,
+	    // more reliable than Name-substring matching below. CelesTrak's
+	    // SATCAT uses abbreviated codes ("DEB", "R/B"); Space-Track's gp
+	    // class spells them out in full ("DEBRIS", "ROCKET BODY"). Checking
+	    // both here means e.g. "WESTFORD NEEDLES" (real Space-Track debris
+	    // whose Name doesn't contain the substring "DEB") still classifies
+	    // correctly instead of falling through to GOLD.
+	    col = Cesium.Color.GRAY
+	}
+	else if (trk["ObjectType"] == "R/B" || trk["ObjectType"] == "ROCKET BODY")
+	{
+	    col = Cesium.Color.MEDIUMORCHID
+	}
+	else if (trk["DataSource"] == "CelesTrak" && trk["OpsStatusCode"])
+	{
+	    // CelesTrak rows carry SATCAT-derived OpsStatusCode (see
 	    // scripts/fetch_celestrak.mjs), which is a precise classification the
 	    // legacy statusKnown/active heuristic below can't use (it only
 	    // recognizes DataSource "UCS"/"USSTRATCOM" and would otherwise force
-	    // every CelesTrak row to GOLD). ObjectType codes are CelesTrak's own
-	    // abbreviations ("PAY", "R/B", "DEB"), not spelled-out names.
-	    if (trk["ObjectType"] == "DEB")
-		col = Cesium.Color.GRAY
-	    else if (trk["ObjectType"] == "R/B")
-		col = Cesium.Color.MEDIUMORCHID
-	    else if (trk["OpsStatusCode"] == "-")
+	    // every CelesTrak row to GOLD).
+	    if (trk["OpsStatusCode"] == "-")
 		col = Cesium.Color.CYAN
 	    else if (trk["OpsStatusCode"] == "D")
 		continue // decayed; shouldn't occur in the active GP feed, defensive skip
@@ -419,6 +430,9 @@ function DisplayObjects(D)
 	}
 	else
 	{
+	    // Legacy fallback for rows without a real ObjectType (e.g. live-API
+	    // UCS/USSTRATCOM sources, which don't carry that field at all) -
+	    // Name-substring matching is the only signal available for these.
 	    if (statusKnown.indexOf(String(trk["NoradId"])) == -1)
 		col = Cesium.Color.GOLD
 	    else if (active.indexOf(trk["NoradId"]) == -1)

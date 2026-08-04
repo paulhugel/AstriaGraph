@@ -479,3 +479,102 @@ conflict in this file — purely additive, both branches' log entries kept,
 reordered chronologically. `main.js` merged automatically with no conflict
 (PR2's color-logic changes and this branch's dropdown-fix line don't
 overlap).
+
+### 2026-08-04 — Extensive real-data-source research for Inactive-satellite status; ObjectType classification bug found and fixed (Claude Code)
+
+After PR1/PR2/PR4 all merged (`e225fbf`), user asked why Active/Inactive
+and Rocket-Body/Debris separation didn't look right on the live site.
+Investigated thoroughly rather than assume:
+
+**Root cause 1 (structural, not fixed): Inactive/Cyan is unreachable
+from current data sources.** Verified live on the deployed site: every
+CelesTrak `OpsStatusCode` present is `{+,P,B,S,X}` (0 rows are `-`) because
+the source query itself is `GROUP=active` — CelesTrak's own definition of
+"active" already excludes `-`-status objects, so a `-` can structurally
+never appear in this feed. Compared against the canonical reference
+deployment (`astria.tacc.utexas.edu/AstriaGraph`, upstream `ut-astria/
+AstriaGraph` repo) which does show real Inactive satellites: read its
+`main.js` directly and found its "Inactive" is not derived from any live
+operational-status feed either - it's the same launch-year-recency
+heuristic already in this fork's legacy fallback (`BirthDate` year < 2017 =
+inactive), fed by a live USSTRATCOM backend with real `BirthDate` values.
+The reference site's on-screen advantage comes from institutional access
+(their own backend/OD pipeline on raw LeoLabs radar + UK Space Agency
+Starbrook telescope data, confirmed via the app's own "Data Sources" info
+modal and `ut-astria/orbdetpy`), not a different/better public API.
+
+Checked every plausible public/individual-accessible source for real
+Active-vs-Inactive status, exhaustively, before concluding none work:
+- **CelesTrak SATCAT**: `PAYLOADS`/`ACTIVE` filters tested directly
+  (`curl`) - only valid combined with a primary selector (`GROUP`/`CATNR`/
+  `INTDES`/`NAME`/`SPECIAL`); no group broader than `active` exists among
+  every category on their site. No path to bulk-query inactive payloads.
+- **Space-Track**: confirmed (again) no operational-status field exists on
+  `gp` or `satcat` classes at all - `CURRENT` is "vestigial," not status.
+- **UCS Satellite Database**: active-only (~7,560 satellites), and
+  explicitly paused updates since May 2023 - too stale regardless.
+- **ESA Space Debris User Portal / DISCOS**: has real classification
+  (PL/PM/PF/PD, RB/RM/RF/RD taxonomy) but DISCOS access requires
+  institutional need-to-know, explicitly "not as an individual" - confirmed
+  via the user's own real account: DISCOS isn't in their Tools menu at all,
+  despite having a general portal login. MASTER (also on that portal) is a
+  statistical debris-flux environment model, not a per-object catalog -
+  wrong kind of data entirely, confirmed via its own documentation.
+- **JSC Vimpel** (`spacedata.vimpel.ru`): real portal exists, but is
+  Russia's Missile Attack Warning System operator - user flagged this
+  needs an explicit, separate call given the defense affiliation; not
+  pursued further this session.
+- **LeoLabs**: public visualization at `platform.leolabs.space` is real
+  and current (27,498 live objects) but backed by an authenticated API
+  (`ApiKeysToUiApiKeys` found in their bundled JS) - the one fetchable
+  public static asset (`static.json.gz`) turned out to be radar-instrument
+  positions for 3D rendering, not object data. No public per-object API
+  found; would need direct outreach to LeoLabs for research/educational
+  access, not a technical integration task.
+
+**Root cause 2 (real bug, fixed): `ObjectType`-based classification was
+CelesTrak-only, so it never applied to Space-Track debris rows.** Found
+by actually counting colors live on the deployed site (not assumed): 115
+of 10,287 Space-Track debris rows showed Gold ("Status unavailable")
+instead of Gray. Sampled them - all "WESTFORD NEEDLES" (real Project West
+Ford debris), correctly `ObjectType: "DEBRIS"` per Space-Track, but the
+`Name` field doesn't contain the substring `"DEB"`, so the legacy
+Name-substring fallback (the only path Space-Track rows go through, since
+the `ObjectType`-aware branch was gated on `DataSource=="CelesTrak"`)
+missed them entirely.
+
+Fix, `main.js` only: pulled the `ObjectType` check out of the
+CelesTrak-specific branch and made it apply first, universally, regardless
+of `DataSource` - checking both CelesTrak's abbreviated codes (`DEB`,
+`R/B`) and Space-Track's full-word codes (`DEBRIS`, `ROCKET BODY`). The
+CelesTrak-specific `OpsStatusCode` branch and the legacy
+`statusKnown`/`active`/GOLD + Name-substring fallback both still exist
+unchanged, now only reached when `ObjectType` isn't one of the
+DEB/R-B/DEBRIS/ROCKET BODY values (e.g. actual payloads, or live-API rows
+with no `ObjectType` field at all).
+
+Verified live (fresh worktree `objecttype-classification`, branch
+`claude/objecttype-classification`, cut from `origin/master` at `e225fbf`):
+before the fix, exact color counts were `{Active: 16274, Debris: 10172,
+Rocket body: 2, Status unavailable: 115}` (total 26,563); after the fix,
+`{Active: 16274, Debris: 10287, Rocket body: 2}` - Gold dropped to 0, all
+115 Westford Needles rows confirmed individually now render
+`rgb(128,128,128)` (Gray). Regression-checked the two cases PR2 had
+already verified (NORAD 25160 `CELESTIS-02 & TAURUS R/B`, `ObjectType:
+PAY` -> still DarkOrange; NORAD 68753 `SL-4 R/B`, `ObjectType: R/B` ->
+still MediumOrchid) - both unaffected, confirming no regression from the
+reordering. No console errors.
+
+**Also confirmed while investigating**: "Uncategorized" (DeepPink) is
+currently unreachable too - it's keyed to `DataSource == "JSC Vimpel"` or
+`"SeeSat-L"`, neither of which is actually fetched by any script in this
+app today (both are legacy `www_data_sources.tsv` entries from upstream's
+original live-API design). Not fixed this session - no decision made on
+whether to wire up an actual JSC Vimpel or SeeSat-L fetch.
+
+**Current honest state of all six Legend categories** (verified live,
+after this fix): Active (real, 16,274), Rocket body (real, 2), Debris
+(real, 10,287, now complete) all correctly populated from genuine data.
+Inactive (0, structurally unreachable from available sources) and
+Uncategorized (0, sources not wired up) remain unpopulated - not bugs,
+confirmed data-availability limits.
