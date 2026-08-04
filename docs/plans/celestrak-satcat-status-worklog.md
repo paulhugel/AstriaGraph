@@ -149,9 +149,33 @@ view`/`gh pr close` etc.) rather than relying on the ambient default repo,
 since this checkout has both `origin` (paulhugel/AstriaGraph) and `upstream`
 (ut-astria/AstriaGraph) remotes and `gh`'s default resolves to `upstream`.
 
+### 2026-08-04 — CI failure fixed (Claude Code)
+
+PR1's `validate` check failed on push: not a data problem, a **shell syntax
+error**. The "Validate checked-in TSV datasets" step wraps its `node -e`
+script in a single-quoted bash string (`run: | node --input-type=module -e
+'...'`). The explanatory comment added in the trimEnd()-fix commit contained
+an apostrophe (`row's`), which terminated that bash single-quoted string
+early mid-script and broke the shell parse — CI error was `syntax error near
+unexpected token '('`, not any assertion failure. Confirmed by pulling the
+actual failed-step log via `gh run view --log-failed` rather than assuming;
+reproduced the exact failure locally with the same `bash -c` wrapping before
+fixing, and reproduced success the same way after. Reworded the comment to
+avoid apostrophes entirely, re-ran `node --check`/`node scripts/test_celestrak.mjs`
+locally, committed (6f49a56), pushed, and confirmed `gh pr checks 10 --repo
+paulhugel/AstriaGraph` now reports `validate: pass`.
+
+**Lesson**: any inline comment or string added inside a YAML `run: |` block
+that itself contains a single-quoted shell string must avoid apostrophes (or
+any character that terminates that quoting), not just be syntactically valid
+in the target language (JS) alone — the outer shell quoting is a second,
+easy-to-miss constraint. Worth a local `bash -c "<exact run: block content>"`
+smoke test before pushing any future edit to this step.
+
 ### Next step
 
-PR1 (paulhugel/AstriaGraph#10) is open, awaiting review/CI/merge. After
-merge, start PR2 (color mapping in `main.js`) — see
-`celestrak-satcat-status.md`. Remember the `--repo` flag for any future
-`gh` commands in this worktree.
+PR1 (paulhugel/AstriaGraph#10) is open, CI passing, awaiting review/merge.
+After merge, start PR2 (color mapping in `main.js`) — see
+`celestrak-satcat-status.md`. Remember the `--repo paulhugel/AstriaGraph`
+flag for any future `gh` commands in this worktree (it has both `origin` and
+`upstream` remotes; see the prior log entry).
