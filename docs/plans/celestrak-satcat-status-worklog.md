@@ -303,10 +303,55 @@ Committed (2c9cfba), pushed, PR opened with `--repo paulhugel/AstriaGraph`
 passed explicitly from the start (lesson from PR1 applied, same as PR2) — no
 repo-targeting mistake. CI (`validate`) passed on the first push.
 
+### 2026-08-04 — Data source dropdown fix, added to PR4 (Claude Code)
+
+User asked to verify the new "Space-Track" source is actually listed in the
+UI, not just present in the underlying data. Checking `main.js` on
+`origin/master` directly (this logic predates PR4 — neither #11 nor #12
+originally touched it) found a real gap in `GetDataSources()`:
+
+```js
+if ((!UseLocalData || fields[1] == "CelesTrak") && fields[1] != "UCS")
+    $("#DataSrcSelect").append(...)
+```
+
+In static/GitHub-Pages mode (`UseLocalData = true`), a source only gets
+added to the "Data source" filter dropdown if its name is literally the
+string `"CelesTrak"` — hardcoded from back when CelesTrak was the only
+static source. `www_data_sources.tsv` correctly lists `SPACETRACK ->
+Space-Track` and every debris row correctly carries `DataSource:
+"Space-Track"` (data itself fine, and still renders under "All", which
+bypasses this filter) — but the dropdown would never offer "Space-Track" as
+a selectable option in static mode, so there'd be no way to filter the view
+down to just that source specifically.
+
+Fix (added to this PR's branch, since PR4 is what actually introduces the
+second static source that exposes the gap; PR2/#11 doesn't touch this
+section and shouldn't be scope-crept):
+
+```js
+if ((!UseLocalData || fields[1] == "CelesTrak" || fields[1] == "Space-Track") && fields[1] != "UCS")
+```
+
+Verified live in a browser (same rigor as PR2's color-mapping
+verification, not just `node --check`): served this worktree, confirmed via
+`document.getElementById('DataSrcSelect').options` that the dropdown now
+lists exactly `["ALL", "CelesTrak", "Space-Track"]`; then actually selected
+"Space-Track" and confirmed via direct entity-visibility inspection that
+**all** 10,287 Space-Track rows show (`spaceTrackShown: 10287` of
+`spaceTrackTotal: 10287`) and **zero** non-Space-Track objects show
+(`otherShown: 0`) — the filter works correctly, not just cosmetically.
+`total: 26563` also confirms both datasets loaded together correctly
+(16,276 NODEB + 10,287 DEB). No console errors.
+
 ### Next step
 
-PR4 (paulhugel/AstriaGraph#12) is open, CI passing, awaiting review/merge.
-PR2 (paulhugel/AstriaGraph#11) is still open separately and unaffected by
-this. PR3 (scheduled refresh, covering both fetch scripts) remains the last
-step of the original plan, now depending on PR2 and PR4 both being merged
-first.
+PR4 (paulhugel/AstriaGraph#12) now includes the dropdown fix, pushed,
+awaiting CI + review/merge. PR2 (paulhugel/AstriaGraph#11) is still open
+separately and unaffected by this. Recommended merge order (no functional
+conflict between #11/#12 — #11 only touches `main.js`'s color logic, #12
+touches everything else; the only shared file is this worklog doc, which
+will need a trivial additive conflict resolution on whichever PR merges
+second): merge #11 first, then update this branch against updated master
+before merging #12. PR3 (scheduled refresh, covering both fetch scripts)
+remains last, depending on both being merged.
