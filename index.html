@@ -89,40 +89,23 @@
       <div class = "modal-content">
 	<span class = "close">&times;</span>
 	<h1>Data Sources</h1>
+	<p>This deployment of AstriaGraph is a static build hosted on GitHub Pages. Object data is
+	fetched on a fixed schedule from the two sources below and republished as static files; there
+	is no live backend or orbit-determination pipeline behind this view.</p>
 	<ol>
-	    <li>DigitalGlobe (<a href = "https://www.digitalglobe.com" target = "_blank">https://www.digitalglobe.com</a>)</li>
-	    <li>CelesTrak (<a href = "https://celestrak.org/NORAD/elements/" target = "_blank">https://celestrak.org/NORAD/elements/</a>)</li>
+	    <li>CelesTrak (<a href = "https://celestrak.org/NORAD/elements/" target = "_blank">https://celestrak.org/NORAD/elements/</a>) &mdash; orbital elements and operational status for active satellites.</li>
+	    <li>Space-Track.org / USSTRATCOM (<a href = "https://www.space-track.org" target = "_blank">https://www.space-track.org</a>) &mdash; the comprehensive on-orbit cataloged debris population.</li>
 	    <li>Optional analytics: AstriaGraph uses Amplitude to receive aggregate interaction events such as filter selections, object counts, data mode, and source labels. Object names and catalog identifiers are not sent.</li>
-	    <li>JSC Vimpel (<a href = "http://spacedata.vimpel.ru" target = "_blank">http://spacedata.vimpel.ru</a>)</li>
-	    <li>LeoLabs (<a href = "https://www.leolabs.space" target = "_blank">https://www.leolabs.space</a>)</li>
-	    <li>Planet (<a href = "https://www.planet.com" target = "_blank">https://www.planet.com</a>)</li>
-	    <li>SeeSat-L (<a href = "http://www.satobs.org/seesat/seesatindex.html" target = "_blank">
-		http://www.satobs.org/seesat/seesatindex.html</a>,
-	      <a href = "https://www.prismnet.com/~mmccants/tles" target = "_blank">
-		https://www.prismnet.com/~mmccants/tles</a>)</li>
-	    <li>UK Space Agency (<a href = "https://www.gov.uk/government/organisations/uk-space-agency" target = "_blank">
-		https://www.gov.uk/government/organisations/uk-space-agency</a>)</li>
-	    <li>Union of Concerned Scientists (<a href = "https://www.ucsusa.org/nuclear-weapons/space-weapons/satellite-database" target = "_blank">
-		https://www.ucsusa.org/nuclear-weapons/space-weapons/satellite-database</a>)</li>
-	    <li>USSTRATCOM (<a href = "https://www.space-track.org" target = "_blank">https://www.space-track.org</a>)</li>
 	</ol>
 
-	<h1>Orbit Determination</h1>
-	The "Astria OD/LeoLabs Data" source shows the results we get by doing orbit determination on radar data
-	from LeoLabs. The "Astria OD/Starbrook Data" source is the result of fitting angles measurements from the
-	UK space agency's Starbrook telescope.
-	<p></p>
-	We use our open-source OD library, which is based on the Orekit astrodynamics framework. The OD source
-	code is available at <a href = "https://github.com/ut-astria/orbdetpy" target = "_blank">
-	  https://github.com/ut-astria/orbdetpy</a>.
-
 	<h1>Visualization</h1>
-	Resident space object data obtained from the sources listed above are stored internally as Cartesian 
+	Resident space object data obtained from the sources listed above are stored internally as Cartesian
 	vectors in the J2000 reference frame. Objects and orbits are visualized using the equations of motion of
 	the Kepler two-body problem. In order to reduce computational cost to the browser, perturbations from
 	Earth oblateness, third bodies, atmospheric drag, solar radiation pressure etc., are not taken into
-	account. The source code is available at
-	<a href = "https://github.com/ut-astria/AstriaGraph" target = "_blank">https://github.com/ut-astria/AstriaGraph</a>.
+	account. The source code for this deployment is available at
+	<a href = "https://github.com/paulhugel/AstriaGraph" target = "_blank">https://github.com/paulhugel/AstriaGraph</a>,
+	a fork of the original <a href = "https://github.com/ut-astria/AstriaGraph" target = "_blank">ut-astria/AstriaGraph</a>.
       </div>
     </div>
 
