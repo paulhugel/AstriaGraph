@@ -6,10 +6,10 @@ the work can see current status without replaying the whole investigation.
 
 ## Status
 
-- [x] PR1: fetch script + schema (BirthDate/Operator/OpsStatusCode/ObjectType columns) — merged: https://github.com/paulhugel/AstriaGraph/pull/10
-- [ ] PR2: color mapping (Option A) + popup fields — open, CI green, awaiting merge: https://github.com/paulhugel/AstriaGraph/pull/11 (this branch was cut before PR2's worklog updates existed; see that branch/PR for full detail)
+- [x] PR1: fetch script + schema (BirthDate/Operator/OpsStatusCode/ObjectType columns) — merged: https://github.com/paulhugel/AstriaGraph/pull/10 (2b7d3ff)
+- [x] PR2: color mapping (Option A) + popup fields — merged: https://github.com/paulhugel/AstriaGraph/pull/11 (c09ac89)
 - [ ] PR3: scheduled refresh workflow (12h cadence) — not started
-- [x] PR4 (added, not in original 3-PR plan): comprehensive Space-Track debris fetch, replacing CelesTrak's narrow 2-collision-group debris source — open, CI green: https://github.com/paulhugel/AstriaGraph/pull/12
+- [x] PR4 (added, not in original 3-PR plan): comprehensive Space-Track debris fetch, replacing CelesTrak's narrow 2-collision-group debris source, plus the data-source-dropdown fix it exposed — open, CI green: https://github.com/paulhugel/AstriaGraph/pull/12
 
 ## Log
 
@@ -172,6 +172,119 @@ any character that terminates that quoting), not just be syntactically valid
 in the target language (JS) alone — the outer shell quoting is a second,
 easy-to-miss constraint. Worth a local `bash -c "<exact run: block content>"`
 smoke test before pushing any future edit to this step.
+
+### 2026-08-04 — PR1 merged
+
+Confirmed clean/mergeable/CI-green via `gh pr view 10 --repo
+paulhugel/AstriaGraph`, then `gh pr merge 10 --repo paulhugel/AstriaGraph
+--merge` (merge commit, matching this repo's existing "Merge PR #N: ..."
+convention). Merged as `2b7d3ff`. Verified by fetching `origin/master` and
+re-reading the committed `www_query_NODEB.tsv` header directly — the 27-column
+schema with `OpsStatusCode`/`ObjectType` is now live on `master`.
+
+Cut a fresh worktree for PR2 off the newly-merged `origin/master`, per the
+plan's sequencing (PR2 needs PR1's columns to exist in committed data):
+`/Users/paulhugel/Projects/_WORKTREES/AstriaGraph/celestrak-color-mapping`,
+branch `claude/celestrak-color-mapping`.
+
+### 2026-08-04 — PR2 implemented (Claude Code)
+
+Re-read `main.js`'s current `DisplayObjects` fresh in the new worktree before
+editing (same discipline as PR1 — don't trust an earlier read of a moving
+target). Confirmed the GOLD-default bug described in the plan still exactly
+applies pre-PR2.
+
+**Correction to the plan caught before implementing**: the plan doc said
+`ObjectType == "ROCKET BODY"`, but CelesTrak SATCAT's actual `OBJECT_TYPE`
+field uses abbreviated codes. Checked the real merged data
+(`assets/data/www_query_NODEB.tsv` on the new worktree, already containing
+PR1's output): `PAY` (16,274 rows), `R/B` (2 rows) — no spelled-out names.
+Implemented against `"R/B"`, not `"ROCKET BODY"`, and corrected the plan doc
+to match.
+
+Changes made, `main.js` only:
+
+- `DisplayObjects`: added a `trk["DataSource"] == "CelesTrak" &&
+  trk["OpsStatusCode"]` branch ahead of the legacy `statusKnown`/`active`/GOLD
+  cascade, implementing the finalized Option-A mapping (DEB→Gray,
+  R/B→MediumOrchid, `{+,P,B,S,X}`→DarkOrange, `-`→Cyan, `D`→skip). The legacy
+  branch (and its Name-substring R/B/DEB overrides) is now only reached for
+  non-CelesTrak rows or CelesTrak rows without SATCAT enrichment, avoiding any
+  double-application of the two classification schemes on the same row. The
+  `DeepPink` (JSC Vimpel/SeeSat-L) override still applies unconditionally
+  afterward, as before — it can't match `DataSource == "CelesTrak"` anyway.
+- `InfoFields`: added `"OpsStatusCode"`, `"ObjectType"` so the click-popup
+  surfaces them (no other change needed — existing generic rendering loop
+  already handles arbitrary string fields).
+- **Found and fixed a real bug while doing this**: `InfoFields.forEach`'s
+  `if (same[inf].length > 0)` throws `TypeError` when `same[inf]` is
+  `undefined` — which it now is for `OpsStatusCode`/`ObjectType` on any row
+  whose source TSV/API doesn't include those columns (specifically, the live
+  `ApiBase` backend, untouched by PR1, almost certainly doesn't yet). This
+  would have broken the popup entirely in live-API mode. Fixed to
+  `if (same[inf] && same[inf].length > 0)`.
+
+Verification performed:
+
+- `node --check main.js` — pass
+- `node scripts/test_celestrak.mjs` — pass (unaffected by this PR, data-layer
+  tests only; no main.js color-logic unit tests exist in this codebase's
+  convention — verified via live browser instead, see below)
+- Served the worktree with `python3 -m http.server` via `preview_start`
+  (`.claude/launch.json` written to the *other*, unrelated worktree that
+  hosts this session — Browser-pane tooling resolves launch.json from the
+  session's own working directory, not arbitrary paths — cleaned up
+  afterward, confirmed via `git status` it left no trace in either worktree)
+  and loaded `index.html` in the real browser:
+  - Visual: color distribution flipped from the pre-PR2 "predominantly GOLD"
+    to predominantly DarkOrange, as intended. No console errors.
+  - Searched "ISS (ZARYA)" (NORAD 25544): popup correctly showed
+    `Data Source: CelesTrak`, `OpsStatusCode: +`, `ObjectType: PAY`; rendered
+    DarkOrange as expected.
+  - Used `javascript_tool` to directly inspect `ObjData`/entity color for
+    NORAD 68753 ("SL-4 R/B", one of the two real `R/B`-typed rows in the
+    dataset): confirmed `OpsStatusCode: "+"`, `ObjectType: "R/B"`, and actual
+    rendered entity color `rgb(186,85,211)` — exactly MediumOrchid — proving
+    the `ObjectType` check correctly overrides what would otherwise be
+    DarkOrange from `OpsStatusCode` alone. This is the strongest evidence the
+    priority ordering in the plan is implemented correctly, not just
+    plausible-looking code.
+  - Did not find a real `OpsStatusCode == "-"` example in the current active
+    snapshot to visually confirm Cyan (none exist in this pull — CelesTrak's
+    "active" group is overwhelmingly `+`; see PR1's log for the full status
+    distribution). The code path is a single equality check, low risk, not
+    independently confirmed against real data.
+
+**Not yet done**: nothing committed or pushed for PR2 yet.
+
+Committed (e5de9af), pushed, PR opened with `--repo paulhugel/AstriaGraph`
+passed explicitly from the start this time (lesson from PR1 applied) — no
+repo-targeting mistake. CI (`validate`) passed on the first push.
+
+### 2026-08-04 — Debris/rocket-body loading verified live (Claude Code)
+
+User asked to specifically confirm rocket bodies and debris load and render
+correctly (the `www_query_DEB.tsv` path, gated behind the "Display rocket
+bodies and debris" checkbox, `OnToggleDebris`/`DebrisLoaded` in `main.js`).
+Re-served this worktree, loaded in browser, confirmed via network requests
+that both `www_query_NODEB.tsv` and `www_query_DEB.tsv` returned 200, and
+inspected `ObjData`/entity colors directly via `javascript_tool`:
+
+- `ObjData` total = 16,981 = 16,276 (NODEB) + 705 (DEB) exactly — confirms
+  the debris file fully loaded into the same object store.
+- 703 objects with `"DEB"` in `Name` → all 703 render exactly Gray
+  (`rgb(128,128,128)`).
+- 5 objects with `"R/B"` in `Name` split 2 MediumOrchid / 3 DarkOrange — at
+  first glance looked like 3 miscolored rocket bodies, but investigated and
+  it's correct: the 3 DarkOrange ones (`CELESTIS-02 & TAURUS R/B`, `RS-44 &
+  BREEZE-KM R/B`, `IPM 2 & BREEZE-M R/B`) are payload+upper-stage combo
+  objects that CelesTrak's own SATCAT classifies `ObjectType: "PAY"` — the
+  string `"R/B"` only appears in the descriptive name, not the
+  classification. PR2's `ObjectType`-priority design is working exactly as
+  intended here: it correctly ignores the misleading Name substring in favor
+  of SATCAT's authoritative type, which the old legacy Name-only heuristic
+  could not do (it would have miscolored these three).
+- No console errors.
 
 ### 2026-08-03/04 — PR4: comprehensive Space-Track debris fetch (Claude Code)
 
@@ -355,3 +468,14 @@ will need a trivial additive conflict resolution on whichever PR merges
 second): merge #11 first, then update this branch against updated master
 before merging #12. PR3 (scheduled refresh, covering both fetch scripts)
 remains last, depending on both being merged.
+
+### 2026-08-04 — PR2 merged
+
+Confirmed clean/mergeable/CI-green via `gh pr view 11 --repo
+paulhugel/AstriaGraph`, then `gh pr merge 11 --repo paulhugel/AstriaGraph
+--merge`. Merged as `c09ac89`. Updated `claude/spacetrack-debris` against
+the new `origin/master` (`git merge origin/master`), resolving the expected
+conflict in this file — purely additive, both branches' log entries kept,
+reordered chronologically. `main.js` merged automatically with no conflict
+(PR2's color-logic changes and this branch's dropdown-fix line don't
+overlap).
