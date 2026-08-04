@@ -77,6 +77,12 @@ function rowFromCelestrak(obj, satcatByNoradId) {
   // than failing the row.
   const satcat = satcatByNoradId ? satcatByNoradId.get(String(noradId)) : undefined
   const birthDate = satcat && satcat.LAUNCH_DATE ? satcat.LAUNCH_DATE : ''
+  // SATCAT's OWNER is a country/org code (e.g. "US", "CIS", "PRC") - the same
+  // vocabulary already used by Space-Track's COUNTRY_CODE and the viewer's
+  // origins.csv dropdown list. Populate both Country and Operator from it;
+  // previously only Operator was set, leaving Country always blank and the
+  // "Country of origin" filter silently non-functional for every CelesTrak row.
+  const country = satcat && satcat.OWNER ? satcat.OWNER : ''
   const operator = satcat && satcat.OWNER ? satcat.OWNER : ''
   const opsStatusCode = satcat && satcat.OPS_STATUS_CODE ? satcat.OPS_STATUS_CODE : ''
   const objectType = satcat && satcat.OBJECT_TYPE ? satcat.OBJECT_TYPE : ''
@@ -84,7 +90,7 @@ function rowFromCelestrak(obj, satcatByNoradId) {
   const cols = [
     'CELESTRAK', // DataSource code, maps via www_data_sources.tsv
     name,
-    '',            // Country
+    country,
     catalogId,
     noradId,
     birthDate, operator, '', '', '', // BirthDate, Operator, Users, Purpose, DetailedPurpose
