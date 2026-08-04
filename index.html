@@ -98,6 +98,13 @@
 	    <li>Optional analytics: AstriaGraph uses Amplitude to receive aggregate interaction events such as filter selections, object counts, data mode, and source labels. Object names and catalog identifiers are not sent.</li>
 	</ol>
 
+	<h1>Orbit Determination</h1>
+	This deployment does not run orbit determination itself; the elements shown are taken as-is from
+	the sources above. The broader AstriaGraph project this fork descends from includes an
+	open-source OD library, based on the Orekit astrodynamics framework, used elsewhere to fit
+	orbits from radar and telescope tracking data. The OD source code is available at
+	<a href = "https://github.com/ut-astria/orbdetpy" target = "_blank">https://github.com/ut-astria/orbdetpy</a>.
+
 	<h1>Visualization</h1>
 	Resident space object data obtained from the sources listed above are stored internally as Cartesian
 	vectors in the J2000 reference frame. Objects and orbits are visualized using the equations of motion of
