@@ -6,7 +6,7 @@ the work can see current status without replaying the whole investigation.
 
 ## Status
 
-- [x] PR1: fetch script + schema (BirthDate/Operator/OpsStatusCode/ObjectType columns) — implemented, not yet committed/pushed
+- [x] PR1: fetch script + schema (BirthDate/Operator/OpsStatusCode/ObjectType columns) — committed (023aff7), pushed, PR opened: https://github.com/paulhugel/AstriaGraph/pull/10
 - [ ] PR2: color mapping (Option A) + popup fields
 - [ ] PR3: scheduled refresh workflow (12h cadence)
 
@@ -129,8 +129,29 @@ worktree currently has the above changes uncommitted, awaiting explicit
 go-ahead to commit (per the session's standing git-safety rule: only commit
 when the user explicitly asks).
 
+### 2026-08-03 — PR targeting mistake, corrected
+
+`gh pr create` (no `--repo` flag) defaulted to this checkout's `upstream`
+remote (`ut-astria/AstriaGraph`) rather than `origin`
+(`paulhugel/AstriaGraph` — the fork that actually deploys the live site at
+paulhugel.github.io/AstriaGraph), because `gh repo view` resolves the
+directory's default repo to `ut-astria/AstriaGraph`. This produced an
+unwanted cross-repo PR against a different organization's upstream repo
+(`ut-astria/AstriaGraph#2`, head `paulhugel:claude/celestrak-satcat-status`
+→ base `ut-astria:master`). Caught immediately, confirmed via
+`gh pr view --json headRepositoryOwner,isCrossRepository`, closed with an
+explanatory comment, and re-opened correctly with an explicit `--repo
+paulhugel/AstriaGraph` flag: **paulhugel/AstriaGraph#10**.
+
+**Lesson for future PRs on this repo/worktree**: always pass
+`--repo paulhugel/AstriaGraph` explicitly to `gh pr create` (and `gh pr
+view`/`gh pr close` etc.) rather than relying on the ambient default repo,
+since this checkout has both `origin` (paulhugel/AstriaGraph) and `upstream`
+(ut-astria/AstriaGraph) remotes and `gh`'s default resolves to `upstream`.
+
 ### Next step
 
-Commit PR1 (pending explicit user go-ahead), then open a PR against
-`origin/master` from branch `claude/celestrak-satcat-status`. After merge,
-start PR2 (color mapping in `main.js`) — see `celestrak-satcat-status.md`.
+PR1 (paulhugel/AstriaGraph#10) is open, awaiting review/CI/merge. After
+merge, start PR2 (color mapping in `main.js`) — see
+`celestrak-satcat-status.md`. Remember the `--repo` flag for any future
+`gh` commands in this worktree.
