@@ -1,6 +1,6 @@
 # CelesTrak SATCAT Operational Status Integration
 
-Status: PLANNED — not yet implemented
+Status: PR1 merged (paulhugel/AstriaGraph#10); PR2 implemented, pending PR
 Branch: `claude/celestrak-satcat-status`
 Worktree: `/Users/paulhugel/Projects/_WORKTREES/AstriaGraph/celestrak-satcat-status`
 Base: `origin/master` @ `9f753c0` (Merge PR #9: stabilize cross-browser controls layout)
@@ -111,7 +111,12 @@ Final per-row classification for CelesTrak-sourced rows once `ObjectType` and
 `OpsStatusCode` are populated:
 
 1. `ObjectType == "DEB"` → `Cesium.Color.GRAY` ("Debris")
-2. `ObjectType == "ROCKET BODY"` → `Cesium.Color.MEDIUMORCHID` ("Rocket body")
+2. `ObjectType == "R/B"` → `Cesium.Color.MEDIUMORCHID` ("Rocket body") — **correction**:
+   CelesTrak SATCAT's `OBJECT_TYPE` uses abbreviated codes (`PAY`, `R/B`, `DEB`, `UNK`),
+   not spelled-out names; confirmed against real fetched data (`PAY` 16,274, `R/B` 2)
+   before implementing PR2, and verified live in-browser via `ObjData`/entity color
+   inspection (SL-4 R/B, NORAD 68753 → `rgb(186,85,211)` = MediumOrchid, correctly
+   overriding what would otherwise be DarkOrange since its `OpsStatusCode` is `+`).
 3. `OpsStatusCode` in `{+, P, B, S, X}` → `Cesium.Color.DARKORANGE` ("Active
    satellite") — matches CelesTrak's own published "active" definition exactly,
    collapsing the finer-grained codes into the existing binary Active/Inactive
