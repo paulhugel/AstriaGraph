@@ -9,7 +9,7 @@ the work can see current status without replaying the whole investigation.
 - [x] PR1: fetch script + schema (BirthDate/Operator/OpsStatusCode/ObjectType columns) — merged: https://github.com/paulhugel/AstriaGraph/pull/10
 - [ ] PR2: color mapping (Option A) + popup fields — open, CI green, awaiting merge: https://github.com/paulhugel/AstriaGraph/pull/11 (this branch was cut before PR2's worklog updates existed; see that branch/PR for full detail)
 - [ ] PR3: scheduled refresh workflow (12h cadence) — not started
-- [ ] PR4 (added, not in original 3-PR plan): comprehensive Space-Track debris fetch, replacing CelesTrak's narrow 2-collision-group debris source — implemented, real data verified, pending commit/PR (this worklog entry)
+- [x] PR4 (added, not in original 3-PR plan): comprehensive Space-Track debris fetch, replacing CelesTrak's narrow 2-collision-group debris source — open, CI green: https://github.com/paulhugel/AstriaGraph/pull/12
 
 ## Log
 
@@ -299,12 +299,14 @@ data, not a secret):
 as an extra precaution given the above) but not yet committed/pushed/PR'd —
 that's the immediate next action.
 
+Committed (2c9cfba), pushed, PR opened with `--repo paulhugel/AstriaGraph`
+passed explicitly from the start (lesson from PR1 applied, same as PR2) — no
+repo-targeting mistake. CI (`validate`) passed on the first push.
+
 ### Next step
 
-Commit PR4 (the 8 explicitly-staged files above), push branch
-`claude/spacetrack-debris`, open PR against `paulhugel/AstriaGraph` with
-`--repo` passed explicitly (this worktree also has both `origin`/`upstream`
-remotes — same lesson as PR1). PR2 (paulhugel/AstriaGraph#11) is still open
-separately and unaffected by this. PR3 (scheduled refresh, covering both
-fetch scripts) remains the last step of the original plan, now depending on
-PR2 and PR4 both being merged first.
+PR4 (paulhugel/AstriaGraph#12) is open, CI passing, awaiting review/merge.
+PR2 (paulhugel/AstriaGraph#11) is still open separately and unaffected by
+this. PR3 (scheduled refresh, covering both fetch scripts) remains the last
+step of the original plan, now depending on PR2 and PR4 both being merged
+first.
