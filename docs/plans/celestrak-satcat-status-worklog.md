@@ -7,7 +7,7 @@ the work can see current status without replaying the whole investigation.
 ## Status
 
 - [x] PR1: fetch script + schema (BirthDate/Operator/OpsStatusCode/ObjectType columns) — merged: https://github.com/paulhugel/AstriaGraph/pull/10 (2b7d3ff)
-- [x] PR2: color mapping (Option A) + popup fields — implemented, verified live in-browser, pending PR
+- [x] PR2: color mapping (Option A) + popup fields — implemented, verified live in-browser, PR opened: https://github.com/paulhugel/AstriaGraph/pull/11 (CI green)
 - [ ] PR3: scheduled refresh workflow (12h cadence)
 
 ## Log
@@ -256,10 +256,13 @@ Verification performed:
 
 **Not yet done**: nothing committed or pushed for PR2 yet.
 
+Committed (e5de9af), pushed, PR opened with `--repo paulhugel/AstriaGraph`
+passed explicitly from the start this time (lesson from PR1 applied) — no
+repo-targeting mistake. CI (`validate`) passed on the first push.
+
 ### Next step
 
-Commit PR2 (`main.js` only), push branch `claude/celestrak-color-mapping`,
-open PR against `paulhugel/AstriaGraph` (remember `--repo` explicitly — this
-worktree also has both `origin`/`upstream` remotes) targeting `master`
-(now at `2b7d3ff` after PR1's merge). After merge, PR3 (scheduled refresh
-workflow) is last — see `celestrak-satcat-status.md`.
+PR2 (paulhugel/AstriaGraph#11) is open, CI passing, awaiting review/merge.
+After merge, PR3 (scheduled refresh workflow, cadence ~12h) is last — see
+`celestrak-satcat-status.md`. Remember `--repo paulhugel/AstriaGraph`
+explicitly for any `gh` command in whatever worktree does PR3.
