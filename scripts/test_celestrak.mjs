@@ -25,6 +25,7 @@ assert.equal(row.length, HEADER.split('\t').length)
 assert.equal(row.length, 27)
 assert.equal(row[0], 'CELESTRAK')
 assert.equal(row[4], '100178')
+assert.equal(row[17], 'LEO') // OrbitType derived from SMA/Ecc, not SATCAT - populated even without enrichment
 assert.equal(row[18], validRecord.EPOCH)
 assert.equal(row[2], '') // Country blank without SATCAT enrichment
 assert.equal(row[5], '') // BirthDate blank without SATCAT enrichment

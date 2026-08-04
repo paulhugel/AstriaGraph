@@ -36,6 +36,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { publishFile } from './lib/publish.mjs'
+import { classifyOrbitRegime } from './lib/orbit_regime.mjs'
 
 const MU_EARTH = 3.986004418e14 // m^3/s^2
 const OUT_DIR = path.resolve(process.cwd(), 'assets', 'data')
@@ -86,6 +87,10 @@ function rowFromCelestrak(obj, satcatByNoradId) {
   const operator = satcat && satcat.OWNER ? satcat.OWNER : ''
   const opsStatusCode = satcat && satcat.OPS_STATUS_CODE ? satcat.OPS_STATUS_CODE : ''
   const objectType = satcat && satcat.OBJECT_TYPE ? satcat.OBJECT_TYPE : ''
+  // OrbitType was previously always hardcoded blank, leaving the viewer's
+  // "Orbit regime" (LEO/MEO/GEO/HEO) filter unable to match anything.
+  // Derived from SMA/Ecc rather than SATCAT (which has no regime field).
+  const orbitType = classifyOrbitRegime(sma, ecc)
 
   const cols = [
     'CELESTRAK', // DataSource code, maps via www_data_sources.tsv
@@ -96,7 +101,7 @@ function rowFromCelestrak(obj, satcatByNoradId) {
     birthDate, operator, '', '', '', // BirthDate, Operator, Users, Purpose, DetailedPurpose
     '', '', '', '', '', // LaunchMass, DryMass, Power, Lifetime, Contractor
     '', '',              // LaunchSite, LaunchVehicle
-    '',                  // OrbitType (optional)
+    orbitType,
     epoch,
     sma,
     ecc,
