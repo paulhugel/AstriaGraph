@@ -26,17 +26,22 @@ assert.equal(row.length, 27)
 assert.equal(row[0], 'CELESTRAK')
 assert.equal(row[4], '100178')
 assert.equal(row[18], validRecord.EPOCH)
+assert.equal(row[2], '') // Country blank without SATCAT enrichment
 assert.equal(row[5], '') // BirthDate blank without SATCAT enrichment
 assert.equal(row[6], '') // Operator blank without SATCAT enrichment
 assert.equal(row[25], '') // OpsStatusCode blank without SATCAT enrichment
 assert.equal(row[26], '') // ObjectType blank without SATCAT enrichment
 
-// SATCAT enrichment: join hit populates BirthDate/Operator/OpsStatusCode/ObjectType
+// SATCAT enrichment: join hit populates Country/BirthDate/Operator/OpsStatusCode/ObjectType.
+// Country and Operator both come from OWNER - same underlying SATCAT field,
+// two TSV columns, so the "Country of origin" filter has real data to match
+// against (previously Country was always hardcoded blank).
 const satcatMap = new Map([
   ['100178', { LAUNCH_DATE: '2026-07-01', OWNER: 'US', OPS_STATUS_CODE: '+', OBJECT_TYPE: 'PAY' }],
 ])
 const enrichedRow = rowFromCelestrak(validRecord, satcatMap).split('\t')
 assert.equal(enrichedRow.length, 27)
+assert.equal(enrichedRow[2], 'US')
 assert.equal(enrichedRow[5], '2026-07-01')
 assert.equal(enrichedRow[6], 'US')
 assert.equal(enrichedRow[25], '+')
@@ -45,6 +50,7 @@ assert.equal(enrichedRow[26], 'PAY')
 // SATCAT join miss: NORAD ID not present in the map leaves fields blank, not throwing
 const missRow = rowFromCelestrak(validRecord, new Map()).split('\t')
 assert.equal(missRow.length, 27)
+assert.equal(missRow[2], '')
 assert.equal(missRow[5], '')
 assert.equal(missRow[6], '')
 assert.equal(missRow[25], '')
@@ -54,6 +60,7 @@ assert.equal(missRow[26], '')
 // must not throw, and should fall back to blank for that field only.
 const partialSatcatMap = new Map([['100178', { LAUNCH_DATE: '2026-07-01' }]])
 const partialRow = rowFromCelestrak(validRecord, partialSatcatMap).split('\t')
+assert.equal(partialRow[2], '')
 assert.equal(partialRow[5], '2026-07-01')
 assert.equal(partialRow[6], '')
 assert.equal(partialRow[25], '')
