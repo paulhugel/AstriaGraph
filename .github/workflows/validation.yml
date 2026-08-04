@@ -29,11 +29,9 @@ jobs:
           node --input-type=module -e '
             import fs from "node:fs";
             for (const file of ["assets/data/www_query_NODEB.tsv", "assets/data/www_query_DEB.tsv"]) {
-              // Split on newlines and drop only genuinely empty lines (e.g. a
-              // trailing blank line from a final newline) rather than
-              // trimEnd()-ing the whole blob, which would also eat a real
-              // last row's trailing empty tab-delimited columns (e.g. a
-              // debris row whose OpsStatusCode/ObjectType are blank).
+              // Split on newlines and drop only empty lines; trimEnd() on the
+              // whole blob would also strip a final data row trailing empty
+              // tab columns (debris rows have blank OpsStatusCode/ObjectType).
               const lines = fs.readFileSync(file, "utf8").split(/\r?\n/).filter(l => l.length > 0);
                const width = lines[0].split("\t").length;
                const ids = new Set();
