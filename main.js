@@ -142,7 +142,7 @@ function TrackAnalytics(eventName, properties)
 var NumFields = [0, 4, 5, 6, 7, 22, 23, 24, 25, 26, 27]
 var InfoFields = ["Name", "Country", "CatalogId", "NoradId", "BirthDate", "Operator", "Users",
 		  "Purpose", "DetailedPurpose", "LaunchMass", "DryMass", "Power", "Lifetime",
-		  "Contractor", "LaunchSite", "LaunchVehicle"]
+		  "Contractor", "LaunchSite", "LaunchVehicle", "OpsStatusCode", "ObjectType"]
 
 var ObjData = {}
 var DebrisLoaded = false
@@ -395,17 +395,42 @@ function DisplayObjects(D)
 	trk["Elem"]["mmo"] = Math.sqrt(EGM96_mu/(_sma*_sma*_sma))
 	trk["Elem"]["MeanAnom"] = (Number(trk["Elem"]["MeanAnom"]) + trk["Elem"]["mmo"]*t*86400) % TwoPi
 
-	if (statusKnown.indexOf(String(trk["NoradId"])) == -1)
-	    col = Cesium.Color.GOLD
-	else if (active.indexOf(trk["NoradId"]) == -1)
-	    col = Cesium.Color.CYAN
+	if (trk["DataSource"] == "CelesTrak" && trk["OpsStatusCode"])
+	{
+	    // CelesTrak rows carry SATCAT-derived ObjectType/OpsStatusCode (see
+	    // scripts/fetch_celestrak.mjs), which is a precise classification the
+	    // legacy statusKnown/active heuristic below can't use (it only
+	    // recognizes DataSource "UCS"/"USSTRATCOM" and would otherwise force
+	    // every CelesTrak row to GOLD). ObjectType codes are CelesTrak's own
+	    // abbreviations ("PAY", "R/B", "DEB"), not spelled-out names.
+	    if (trk["ObjectType"] == "DEB")
+		col = Cesium.Color.GRAY
+	    else if (trk["ObjectType"] == "R/B")
+		col = Cesium.Color.MEDIUMORCHID
+	    else if (trk["OpsStatusCode"] == "-")
+		col = Cesium.Color.CYAN
+	    else if (trk["OpsStatusCode"] == "D")
+		continue // decayed; shouldn't occur in the active GP feed, defensive skip
+	    else
+		// "+", "P", "B", "S", "X": CelesTrak's own definition of "active"
+		// (celestrak.org/satcat/status.php), collapsed into the existing
+		// binary Active/Inactive Legend entries rather than a new color.
+		col = Cesium.Color.DARKORANGE
+	}
 	else
-	    col = Cesium.Color.DARKORANGE
+	{
+	    if (statusKnown.indexOf(String(trk["NoradId"])) == -1)
+		col = Cesium.Color.GOLD
+	    else if (active.indexOf(trk["NoradId"]) == -1)
+		col = Cesium.Color.CYAN
+	    else
+		col = Cesium.Color.DARKORANGE
 
-	if (trk["Name"].search("R/B") != -1)
-	    col = Cesium.Color.MEDIUMORCHID
-	if (trk["Name"].search("DEB") != -1)
-	    col = Cesium.Color.GRAY
+	    if (trk["Name"].search("R/B") != -1)
+		col = Cesium.Color.MEDIUMORCHID
+	    if (trk["Name"].search("DEB") != -1)
+		col = Cesium.Color.GRAY
+	}
 	if ((trk["DataSource"] == "JSC Vimpel" && trk["NoradId"] == "") || trk["DataSource"] == "SeeSat-L")
 	    col = Cesium.Color.DEEPPINK
 
@@ -494,7 +519,11 @@ function DisplayOrbit(obj)
 		}
 
 		InfoFields.forEach (function(inf) {
-		    if (same[inf].length > 0)
+		    // A source's TSV/API response may not include every InfoFields column
+		    // (e.g. OpsStatusCode/ObjectType are only populated by the CelesTrak
+		    // static fetch; the live ApiBase backend may not send them at all),
+		    // so same[inf] can be undefined rather than an empty string.
+		    if (same[inf] && same[inf].length > 0)
 			htm = htm + `<tr><td>${inf}</td> <td align = "right">${same[inf]}</td></tr>`
 		})
 
