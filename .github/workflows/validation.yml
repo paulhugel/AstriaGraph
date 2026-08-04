@@ -22,16 +22,24 @@ jobs:
         run: |
           node --check main.js
           node --check scripts/fetch_celestrak.mjs
+          node --check scripts/fetch_spacetrack_debris.mjs
+          node --check scripts/lib/publish.mjs
       - name: Run CelesTrak validation fixtures
         run: node scripts/test_celestrak.mjs
+      - name: Run Space-Track validation fixtures
+        run: node scripts/test_spacetrack_debris.mjs
       - name: Validate checked-in TSV datasets
         run: |
           node --input-type=module -e '
             import fs from "node:fs";
-            for (const file of ["assets/data/www_query_NODEB.tsv", "assets/data/www_query_DEB.tsv"]) {
+            const targets = [
+              { file: "assets/data/www_query_NODEB.tsv", provenance: "CELESTRAK" },
+              { file: "assets/data/www_query_DEB.tsv", provenance: "SPACETRACK" },
+            ];
+            for (const { file, provenance } of targets) {
               // Split on newlines and drop only empty lines; trimEnd() on the
               // whole blob would also strip a final data row trailing empty
-              // tab columns (debris rows have blank OpsStatusCode/ObjectType).
+              // tab columns (some rows have blank OpsStatusCode/ObjectType).
               const lines = fs.readFileSync(file, "utf8").split(/\r?\n/).filter(l => l.length > 0);
                const width = lines[0].split("\t").length;
                const ids = new Set();
@@ -39,7 +47,7 @@ jobs:
                for (const line of lines.slice(1)) {
                  const cells = line.split("\t");
                  if (cells.length !== width) throw new Error(`${file}: malformed row`);
-                 if (cells[0] !== "CELESTRAK") throw new Error(`${file}: provenance mismatch`);
+                 if (cells[0] !== provenance) throw new Error(`${file}: provenance mismatch`);
                  if (!cells[4]) throw new Error(`${file}: missing NORAD ID`);
                  if (ids.has(cells[4])) throw new Error(`${file}: duplicate NORAD ID ${cells[4]}`);
                  const numericFields = [4, 19, 20, 21, 22, 23, 24];

@@ -2,3 +2,12 @@ cesium
 data/
 server/
 config.local.js
+
+# Never commit anything under this name pattern, regardless of intended
+# content - this file is meant to hold only op:// references, never actual
+# secret values, but excluded outright as a hard backstop rather than relying
+# on that intent being followed correctly every time.
+.env.spacetrack.1password
+.env
+.env.local
+.env.*.local

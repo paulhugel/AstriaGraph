@@ -183,7 +183,7 @@ function GetDataSources()
 		continue
 
 	    DataSources[fields[0]] = fields[1]
-	    if ((!UseLocalData || fields[1] == "CelesTrak") && fields[1] != "UCS")
+	    if ((!UseLocalData || fields[1] == "CelesTrak" || fields[1] == "Space-Track") && fields[1] != "UCS")
 		$("#DataSrcSelect").append($("<option>", {value : fields[1], text : fields[1]}))
 	}
 

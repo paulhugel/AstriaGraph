@@ -5,8 +5,14 @@
 
   Outputs:
     - assets/data/www_query_NODEB.tsv (active satellites)
-    - assets/data/www_query_DEB.tsv   (selected debris groups)
   Leaves existing assets/data/www_data_sources.tsv as-is (must include CELESTRAK).
+
+  Debris (www_query_DEB.tsv) is fetched separately by
+  scripts/fetch_spacetrack_debris.mjs. CelesTrak only exposes debris via a
+  handful of named collision-event groups (e.g. iridium-33-debris), not the
+  full cataloged debris population; Space-Track's SATCAT is the actual
+  comprehensive source (see docs/plans/celestrak-satcat-status.md for the
+  comparison), so this script no longer fetches or publishes debris at all.
 
   Usage:
     node AstriaGraph/scripts/fetch_celestrak.mjs
@@ -29,6 +35,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { publishFile } from './lib/publish.mjs'
 
 const MU_EARTH = 3.986004418e14 // m^3/s^2
 const OUT_DIR = path.resolve(process.cwd(), 'assets', 'data')
@@ -136,42 +143,6 @@ function validateRecords(records, label) {
   }
 }
 
-async function publishPair(nodebContents, debContents) {
-  const parentDir = path.dirname(OUT_DIR)
-  const stagingDir = await fs.mkdtemp(path.join(parentDir, '.astria-refresh-'))
-  const stagedDataDir = path.join(stagingDir, 'data')
-  const backupDir = await fs.mkdtemp(path.join(parentDir, '.astria-previous-'))
-  const backupDataDir = path.join(backupDir, 'data')
-  let oldDataMoved = false
-  let newDataPublished = false
-  let rollbackFailed = false
-
-  try {
-    await fs.cp(OUT_DIR, stagedDataDir, { recursive: true })
-    await fs.writeFile(path.join(stagedDataDir, 'www_query_NODEB.tsv'), nodebContents)
-    await fs.writeFile(path.join(stagedDataDir, 'www_query_DEB.tsv'), debContents)
-    await fs.rename(OUT_DIR, backupDataDir)
-    oldDataMoved = true
-    await fs.rename(stagedDataDir, OUT_DIR)
-    newDataPublished = true
-    await fs.rm(backupDir, { recursive: true, force: true })
-  } catch (error) {
-    if (newDataPublished)
-      await fs.rm(OUT_DIR, { recursive: true, force: true })
-    if (oldDataMoved)
-      await fs.rename(backupDataDir, OUT_DIR)
-        .catch(restoreError => {
-          rollbackFailed = true
-          throw new Error(`Dataset pair rollback failed: ${restoreError.message}`)
-        })
-    throw new Error(`Dataset pair publication failed safely: ${error.message}`)
-  } finally {
-    await fs.rm(stagingDir, { recursive: true, force: true })
-    if (!newDataPublished && !rollbackFailed)
-      await fs.rm(backupDir, { recursive: true, force: true })
-  }
-}
-
 async function fetchSatcatActiveMap() {
   // SATCAT enrichment is best-effort: a failure here must not block or
   // replace publication of the GP-derived datasets. On failure we log and
@@ -204,41 +175,13 @@ async function main() {
   validateRecords(active, 'active')
 
   // SATCAT active-group records, keyed by NORAD_CAT_ID, for OpsStatusCode/
-  // ObjectType/LAUNCH_DATE/OWNER enrichment. Not required for debris groups:
-  // their ObjectType is already implied by group membership, and querying
-  // SATCAT again for them would be an unnecessary extra request per the
-  // usage policy's "only download the data you need" guidance.
+  // ObjectType/LAUNCH_DATE/OWNER enrichment.
   const satcatByNoradId = await fetchSatcatActiveMap()
 
-  // Debris: use the named CelesTrak groups that are currently supported.
-  // An invalid group must not silently replace the checked-in dataset with
-  // a header-only file.
-  const debrisGroups = [
-    'iridium-33-debris',
-    'cosmos-2251-debris'
-  ]
-  const debrisAll = []
-  for (const g of debrisGroups) {
-    const url = `https://celestrak.org/NORAD/elements/gp.php?GROUP=${encodeURIComponent(g)}&FORMAT=json`
-    try {
-      const arr = await fetchJson(url)
-      validateRecords(arr, `debris group ${g}`)
-      debrisAll.push(...arr)
-    } catch (e) {
-      throw new Error(`Required debris group ${g} failed; preserving existing datasets: ${e.message}`)
-    }
-  }
-  if (debrisAll.length === 0) {
-    throw new Error('No debris records were fetched; refusing to overwrite www_query_DEB.tsv')
-  }
-  validateRecords(debrisAll, 'debris')
-
   const nodebLines = [HEADER, ...active.map(obj => rowFromCelestrak(obj, satcatByNoradId))]
-  const debLines = [HEADER, ...debrisAll.map(obj => rowFromCelestrak(obj))]
-  await publishPair(nodebLines.join('\n'), debLines.join('\n'))
+  await publishFile(path.join(OUT_DIR, 'www_query_NODEB.tsv'), nodebLines.join('\n'))
 
   console.log(`Wrote ${active.length} active → www_query_NODEB.tsv`)
-  console.log(`Wrote ${debrisAll.length} debris → www_query_DEB.tsv`)
   console.log('Done.')
 }
 
