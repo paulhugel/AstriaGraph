@@ -56,6 +56,7 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { publishFile } from './lib/publish.mjs'
+import { classifyOrbitRegime } from './lib/orbit_regime.mjs'
 
 const OUT_DIR = path.resolve(process.cwd(), 'assets', 'data')
 const BASE_URL = 'https://www.space-track.org'
@@ -94,6 +95,9 @@ function rowFromSpaceTrack(obj) {
   // render via the legacy Name-substring "DEB" fallback, which matches
   // Space-Track's OBJECT_NAME values (e.g. "VANGUARD DEB") correctly.
   const objectType = obj.OBJECT_TYPE || ''
+  // OrbitType was previously always hardcoded blank, leaving the viewer's
+  // "Orbit regime" (LEO/MEO/GEO/HEO) filter unable to match anything.
+  const orbitType = classifyOrbitRegime(sma, ecc)
 
   const cols = [
     'SPACETRACK', // DataSource code, maps via www_data_sources.tsv
@@ -104,7 +108,7 @@ function rowFromSpaceTrack(obj) {
     birthDate, '', '', '', '', // BirthDate, Operator, Users, Purpose, DetailedPurpose
     '', '', '', '', '', // LaunchMass, DryMass, Power, Lifetime, Contractor
     '', '',              // LaunchSite, LaunchVehicle
-    '',                  // OrbitType (optional)
+    orbitType,
     epoch,
     sma,
     ecc,

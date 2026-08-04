@@ -30,6 +30,7 @@ assert.equal(row[2], 'US')
 assert.equal(row[3], '1958-002C')
 assert.equal(row[4], '1576')
 assert.equal(row[5], '1960-08-12') // BirthDate <- LAUNCH_DATE
+assert.equal(row[17], 'LEO') // OrbitType derived from SEMIMAJOR_AXIS/Ecc (~1600 km altitude)
 assert.equal(row[18], validRecord.EPOCH)
 assert.equal(Number(row[19]), 7977735) // SMA: km -> m
 assert.equal(row[25], '') // OpsStatusCode: not a Space-Track concept

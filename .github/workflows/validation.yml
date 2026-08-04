@@ -24,6 +24,9 @@ jobs:
           node --check scripts/fetch_celestrak.mjs
           node --check scripts/fetch_spacetrack_debris.mjs
           node --check scripts/lib/publish.mjs
+          node --check scripts/lib/orbit_regime.mjs
+      - name: Run orbit regime classification fixtures
+        run: node scripts/test_orbit_regime.mjs
       - name: Run CelesTrak validation fixtures
         run: node scripts/test_celestrak.mjs
       - name: Run Space-Track validation fixtures
