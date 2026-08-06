@@ -224,13 +224,27 @@ record of the decisions they demonstrated.
   brand wordmark) **is binding for Stage 3**, not just structural reference. The
   real site's current look (no custom fonts, named CSS colors like `DarkOrange`)
   is superseded by the mockup's token system.
-- **One Round 4 item remains genuinely open — a human product decision, not a
-  planning defect:**
-  1. The real `<select>` elements are jQuery UI `.selectmenu()` widgets
-     (`main.js:655,666,677`), not plain `<select>`s — they generate their own
-     popup DOM. Should Stage 3 swap them to native `<select>` elements, or keep
-     jQuery UI's widget and empirically test its popup positioning inside the
-     new menu panel's clip/scroll/transition machinery first?
+- **Decided:** the three `<select>` elements (`#DataSrcSelect`, `#OriginSelect`,
+  `#RegimeSelect`; currently jQuery UI `.selectmenu()` widgets, initialized at
+  `main.js:655,666,677` with additional `.selectmenu("refresh")`/re-init calls at
+  `main.js:191,787-788` after data reloads) **switch to native `<select>` for
+  Stage 3** — all `.selectmenu(...)` call sites are removed; the corresponding
+  `<select>` elements and their change-event handlers stay.
+  Reason: `.menu-panel`/`.time-panel` animate open/closed via CSS `transform`
+  (`translateY`/`scale`), which creates a new containing block for descendants —
+  a well-known way to break jQuery UI's popup positioning, since it renders its
+  dropdown near `document.body` using JS math that assumes normal document flow.
+  This interaction was never modeled by any mockup across 4 review rounds. Native
+  `<select>` renders its open state via the OS (outside our CSS/DOM entirely), so
+  it can't be broken by our panel's `overflow`/`transform`/container-query
+  machinery, and gets full keyboard/screen-reader support for free. Trade-off
+  accepted: only the closed/trigger control stays fully re-skinnable to the new
+  dark-glass theme; the OS-rendered open dropdown itself can't be — reliability
+  across devices was prioritized over that one sub-element's visual polish.
+  jQuery UI's `autocomplete` on `#SearchBox` (init `main.js:463`, event handler
+  `main.js:648`) is a separate widget, unaffected by this decision and out of
+  scope here.
+- All Round 4 open items are now resolved. Design/Planning is complete.
 - Stage 3 Execution (actual edits to `index.html` and `main.js` in this worktree) has
   not started — everything above is Design/Planning only.
 - No commit, push, or merge beyond this planning doc is authorized yet.
