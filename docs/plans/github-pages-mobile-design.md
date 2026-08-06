@@ -245,6 +245,37 @@ record of the decisions they demonstrated.
   `main.js:648`) is a separate widget, unaffected by this decision and out of
   scope here.
 - All Round 4 open items are now resolved. Design/Planning is complete.
+
+### Pre-authorization file-scope verification
+
+Before drafting the Stage 3 authorization request, directly grepped every JS file
+for every id/selector touched by the redesign (not re-asserted from earlier reads).
+Confirms the file scope is `index.html` + `main.js` only, and surfaces 3 precision
+requirements the earlier decisions didn't spell out:
+
+- `celemech.js` and `config.js` have **zero** references to any redesign-affected
+  element — confirmed out of scope, not assumed.
+- `#InputsDiv`/`#DisclaimerDiv` are never referenced by id in `main.js` — only
+  their **children** are: `#SearchBox`, `#DataSrcSelect`, `#OriginSelect`,
+  `#RegimeSelect`, `#DebrisToggle`. **These exact ids must be preserved verbatim**
+  when relocated into the new Filter accordion markup, or `main.js` breaks.
+- `#Loader` (`main.js:464,690`, `.style.display` toggle) was not named in any
+  earlier decision. It is untouched/unaffected by the redesign — must be
+  preserved as-is in `index.html`, not incidentally removed during restructuring.
+- `index.html`'s own inline `<script>` block (currently ~lines 304-319, separate
+  from `main.js`) wires `#DataSrcInfo` click → show the old modal, and `.close`
+  click → hide it. Since `.modal`/`#DataSrcPopup` are removed at Stage 3, this
+  script block must be updated to drop that wiring (still within `index.html`'s
+  file scope, just not previously named as its own edit point). The `#DebrisToggle`
+  onclick wiring in that same block stays, since the checkbox itself is preserved.
+- `#DataSrcInfo` (the "here" link inside the old disclaimer text pointing at the
+  modal) becomes redundant once Sources is its own directly-reachable menu
+  section. **Decision: remove it** along with the rest of the old disclaimer
+  markup — no in-text cross-link is needed when the destination is one tap away
+  in the same menu system.
+
+## Open items / next steps
+
 - Stage 3 Execution (actual edits to `index.html` and `main.js` in this worktree) has
   not started — everything above is Design/Planning only.
 - No commit, push, or merge beyond this planning doc is authorized yet.
