@@ -219,13 +219,14 @@ record of the decisions they demonstrated.
 - Round 3 review complete; both findings from it (drag/outside-click conflict,
   badge integration plan) are fixed/documented above.
 - Round 4 validation complete; Findings 1, 4, and 5 are fixed/documented above.
-- **Two Round 4 items remain genuinely open — human product decisions, not
-  planning defects:**
-  1. Is the mockup's visual re-skin (dark glass color tokens, `Georgia` serif
-     brand wordmark) binding for Stage 3, or is Stage 3 scoped to structural/
-     responsive changes only, keeping the site's current look (no custom fonts,
-     existing named CSS colors)?
-  2. The real `<select>` elements are jQuery UI `.selectmenu()` widgets
+- **Decided:** the mockup's visual re-skin (dark glass color tokens — `--accent`,
+  `--space-bg`/`--space-panel`/etc. — and the `Georgia,"Times New Roman",serif`
+  brand wordmark) **is binding for Stage 3**, not just structural reference. The
+  real site's current look (no custom fonts, named CSS colors like `DarkOrange`)
+  is superseded by the mockup's token system.
+- **One Round 4 item remains genuinely open — a human product decision, not a
+  planning defect:**
+  1. The real `<select>` elements are jQuery UI `.selectmenu()` widgets
      (`main.js:655,666,677`), not plain `<select>`s — they generate their own
      popup DOM. Should Stage 3 swap them to native `<select>` elements, or keep
      jQuery UI's widget and empirically test its popup positioning inside the
