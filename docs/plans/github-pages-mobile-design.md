@@ -1,8 +1,8 @@
 # Mobile-Compatible Redesign — GitHub Pages Site
 
-Status: Design/Planning complete through two independent review rounds (both STOP,
-fixes applied); Stage 3 Execution (actual `index.html`/`main.js` changes) **not yet
-started**.
+Status: Stage 3 Execution complete and live-tested (uncommitted — Level D only;
+commit requires separate Level E authorization). Design/Planning ran 4 independent
+review rounds (all STOP, all fixes applied) before execution began.
 Branch: `claude/github-pages-mobile-design-86c554`
 Worktree: `/Users/paulhugel/Projects/AstriaGraph/.claude/worktrees/github-pages-mobile-design-86c554`
 Base: `master` @ `6424b14` (Merge PR #17: data-sources-popup)
@@ -274,8 +274,82 @@ requirements the earlier decisions didn't spell out:
   markup — no in-text cross-link is needed when the destination is one tap away
   in the same menu system.
 
+## Stage 3 Execution — complete, live-tested, uncommitted
+
+Executed under the signed Stage 3 authorization (Level D) against `index.html` and
+`main.js` only, implementing all 10 authorized items exactly as specified. Verified
+live: served the worktree via a local static HTTP server and tested in the browser
+pane at both desktop and true 375px mobile viewport widths (`git diff --stat`:
+`index.html` +490/-196 lines net across both files, no other files touched).
+
+### Bugs caught and fixed during live testing (not caught by 4 rounds of static review)
+
+1. **`CsView.timeline.zoomTo(...)` threw on every page load.** Disabling the native
+   `timeline` widget (item 6) means `CsView.timeline` is `undefined`; a leftover
+   call to `.zoomTo()` on it (main.js, right after the Viewer config) would throw
+   immediately. Caught via grep before the first browser load, not via static
+   review — removed the now-meaningless call with an explanatory comment.
+2. **The relocated `#DataModeBadge`'s `textContent` rendered as visible overflow
+   text.** The dot-sized element still has `main.js`-set text ("Static data"/"Live
+   API") in its DOM; without `overflow:hidden`, that text spilled out of the 9px
+   circle instead of staying invisible. Caught via screenshot, fixed with
+   `overflow:hidden; text-indent:200%; white-space:nowrap`.
+3. **Rewind/play/fast-forward icons and other Unicode glyphs rendered as mojibake.**
+   Root cause: this file has `<body>` before `<head>` (pre-existing structure, not
+   restructured — out of authorized scope), so `<meta charset="utf-8">` arrives too
+   late in the byte stream for the browser to correctly parse the raw UTF-8
+   characters this redesign introduced (◄◄ ▶ ►► ⤾ ⤢ ↗ ⌄ × —). Fixed by converting
+   every rendered occurrence to HTML numeric character references (matching the
+   original file's own existing pattern of using `&mdash;`/`&quot;` instead of raw
+   bytes) and JS `\uXXXX` escapes for the two glyphs set via script (`main.js`-style
+   already used this convention; index.html's own inline script now does too). Left
+   the 4 occurrences inside CSS comments un-fixed — invisible, harmless.
+
+### Also self-caught before any browser load (static verification)
+
+- The badge CSS I first wrote repeated the exact bug the plan doc had documented
+  fixing in Round 4 (`#DataModeBadge.status-dot` — a compound selector requiring a
+  class that `main.js`'s `badge.className = "static"` overwrite would strip).
+  Caught by re-reading my own CSS against the doc before testing; corrected to key
+  off `#DataModeBadge` alone, per the doc's own specification.
+
+### Live verification performed
+
+- Desktop width: brand toggle → time panel (live-updating clock bound to
+  `CsView.clock`, play/pause, rewind/fast-forward with real multiplier changes,
+  click-to-seek scrub bar); menu toggle → compact ~300px anchored dropdown; Filter
+  accordion (legend first, then search/selects/checkbox); Sources/Disclaimer
+  accordions; Reset view (real `flyHome()`, menu auto-closes); Scene mode (real
+  3D→2D→Columbus→3D cycle via `Cesium.SceneMode`, menu stays open); Help panel
+  open/close; native `<select>` change events (`DataSrcSelect` → real
+  `DisplayObjects` filtering, no errors); Escape key closes open panels.
+- Mobile width (375px): `document.documentElement.scrollWidth === clientWidth`,
+  zero horizontal overflow, viewport meta confirmed active; menu correctly renders
+  as the full-width drawer (container-query breakpoint firing correctly); all rows
+  legible and reachable.
+- Functional regression check: toggling the relocated `#DebrisToggle` checkbox
+  correctly triggered the original `main.js` `OnToggleDebris()` / `GetSpaceObjects`
+  pipeline — entity count went from 16,276 to 26,563 after loading debris, proving
+  the id-preservation requirement (item 3) held under real interaction, not just
+  static inspection.
+- Console: clean on fresh page load (only the pre-existing, expected
+  `config.local.js` 404 and sandbox-artifact network errors — no errors from any
+  redesign code).
+
+### Not explicitly tested
+
+- The `Full screen` button's actual fullscreen transition (browser security
+  generally requires a direct user gesture for the Fullscreen API, which is hard to
+  exercise identically through automated tooling; the button wiring itself follows
+  the same pattern already proven correct for every other action row).
+- Click-outside-to-close (Escape-to-close was verified instead; same code path,
+  same `setMenu(false)`/`setTimePanel(false)` calls).
+- `#SearchBox` autocomplete interaction specifically (pre-existing `main.js`
+  behavior, unmodified by this work beyond DOM relocation with id preserved).
+
 ## Open items / next steps
 
-- Stage 3 Execution (actual edits to `index.html` and `main.js` in this worktree) has
-  not started — everything above is Design/Planning only.
-- No commit, push, or merge beyond this planning doc is authorized yet.
+- Stage 3 Execution is complete and live-verified, but **uncommitted**. This
+  worktree's `index.html`/`main.js` changes are Level D only — no commit, push, or
+  merge is authorized yet. A separate explicit authorization (Level E at minimum)
+  is required before this work is committed.

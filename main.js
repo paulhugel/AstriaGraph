@@ -188,7 +188,6 @@ function GetDataSources()
 	}
 
 	$("#DataSrcSelect").val("ALL")
-	$("#DataSrcSelect").selectmenu("refresh")
 	if (UseLocalData)
 	    GetSpaceObjects("assets/data/www_query_NODEB.tsv", "", DisplayObjects)
 	else
@@ -652,37 +651,34 @@ $("#SearchBox").on("autocompleteselect", function (event, ui)
     CsView.selectedEntity = CsView.entities.getById(ui.item.value)
 })
 
-$("#DataSrcSelect").selectmenu({width : "100%",
-    select : function (event, ui)
-    {
-	DisplayObjects(ObjData)
-	TrackAnalytics('Data Source Filtered', {
-	    data_source: ui.item.value,
-	    object_count: Object.keys(ObjData).length,
-	})
-    }
+// Native <select> elements — see docs/plans/github-pages-mobile-design.md for why
+// jQuery UI's selectmenu widget was replaced (its popup positioning assumes normal
+// document flow, which the new CSS-transform-animated menu panel breaks).
+$("#DataSrcSelect").on("change", function ()
+{
+    DisplayObjects(ObjData)
+    TrackAnalytics('Data Source Filtered', {
+	data_source: this.value,
+	object_count: Object.keys(ObjData).length,
+    })
 })
 
-$("#OriginSelect").selectmenu({width : "100%",
-    select : function (event, ui)
-    {
-	DisplayObjects(ObjData)
-	TrackAnalytics('Origin Filtered', {
-	    country: ui.item.value,
-	    object_count: Object.keys(ObjData).length,
-	})
-    }
+$("#OriginSelect").on("change", function ()
+{
+    DisplayObjects(ObjData)
+    TrackAnalytics('Origin Filtered', {
+	country: this.value,
+	object_count: Object.keys(ObjData).length,
+    })
 })
 
-$("#RegimeSelect").selectmenu({width : "100%",
-    select : function (event, ui)
-    {
-	DisplayObjects(ObjData)
-	TrackAnalytics('Orbit Regime Filtered', {
-	    regime: ui.item.value,
-	    object_count: Object.keys(ObjData).length,
-	})
-    }
+$("#RegimeSelect").on("change", function ()
+{
+    DisplayObjects(ObjData)
+    TrackAnalytics('Orbit Regime Filtered', {
+	regime: this.value,
+	object_count: Object.keys(ObjData).length,
+    })
 })
 
 function OnToggleDebris()
@@ -724,12 +720,15 @@ var CsView = new Cesium.Viewer("MainDisplay", {
     terrainProviderViewModels : [],
     terrainProvider: new Cesium.EllipsoidTerrainProvider(),
     geocoder : false,
-    animation : true,
-    timeline : true,
-    homeButton : true,
-    infoBox : true,
-    sceneModePicker : true,
-    navigationHelpButton : true,
+    // Native Cesium chrome is replaced by the custom brand/time toggle and
+    // unified menu in index.html — see docs/plans/github-pages-mobile-design.md.
+    animation : false,
+    timeline : false,
+    homeButton : false,
+    infoBox : false,
+    sceneModePicker : false,
+    navigationHelpButton : false,
+    fullscreenButton : false,
     skyAtmosphere : false,
     skyBox : false,
     CreditDisplay : true,
@@ -742,7 +741,9 @@ CsView.clock.stopTime = SimStop.clone()
 CsView.clock.currentTime = SimStart.clone()
 CsView.clock.clockRange = Cesium.ClockRange.CLAMPED
 CsView.clock.multiplier = 1
-CsView.timeline.zoomTo(SimStart, SimStop)
+// CsView.timeline.zoomTo(...) removed: the native timeline widget is disabled
+// (timeline: false above); the custom time panel in index.html reads
+// CsView.clock directly and needs no widget-zoom equivalent.
 
 CsView.selectedEntityChanged.addEventListener(OnTrackClick)
 
@@ -784,8 +785,6 @@ $.get("./origins.csv", function (csv) {
     }
 
     $("#OriginSelect").val("ALL")
-    $("#OriginSelect").selectmenu({width : "100%"})
-    $("#OriginSelect").selectmenu("refresh")
     // If objects were already loaded before origins were ready, repaint now
     try {
         var hasData = false; for (var k in ObjData) { hasData = true; break; }
