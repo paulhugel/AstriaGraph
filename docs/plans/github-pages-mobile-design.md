@@ -96,6 +96,30 @@ applied in response:
 | 9 | Rotation/breakpoint transition untested | Mockup got a live drag-resize handle to test the ~460px container-query breakpoint continuously |
 | 10 | Legend bundled with Filters, now nested two disclosures deep (worsened) | Reordered — Legend is now the first thing shown when "Filter" opens |
 
+### Round 3 — independent re-check of the v3 fixes
+
+A third independent review verified Round 2's 10 findings against the actual fixed
+code (not against the fix table's own claims) and returned **STOP** again, but much
+narrower: 8 of 10 were confirmed genuinely resolved. Two Medium findings remained,
+both now fixed:
+
+- **Finding A**: the new drag-resize handle (added for Round 2 fix #9) and the new
+  outside-click handler (added for Round 2 fix #3) interacted badly — releasing a
+  drag fired a synthetic click that the outside-click listener treated as "click
+  outside," closing whichever panel was open, breaking the mockup's own demonstrated
+  walkthrough. **Fixed**: a `justDragged` flag (cleared on the next tick) and an
+  explicit resize-handle exclusion now suppress that synthetic click in the
+  outside-click handler.
+- **Finding B**: the badge-merge fix (Round 2 #1) was visual-only, with no concrete
+  plan for the real `#DataModeBadge` element/its 3 `main.js` call sites. **Resolved
+  by specifying the Stage 3 integration plan below** — no mockup code change needed
+  for this one, since the real fix is a Stage 3 execution detail, not a mockup gap.
+
+Also confirmed by Round 3: no cascade/specificity bug in the container-query
+fallback, the `position:relative`+`overflow:hidden` clipping fix from Round 2 holds
+at every tested width, the two panels' mutual-exclusivity behavior is correct, and
+`main.js` is verified still completely untouched (no Stage 3 work has started).
+
 ## Settled decisions
 
 - Logo image + link (`astria.tacc.utexas.edu`) removed entirely.
@@ -109,6 +133,23 @@ applied in response:
 - One unified design across desktop and mobile via CSS container queries, not a
   binary breakpoint split.
 
+### Stage 3 integration plan — `#DataModeBadge` (closes Round 3 Finding B)
+
+Confirmed via direct read of the real files: `index.html:23` declares
+`<div id="DataModeBadge" title="Data mode"></div>`, styled at `index.html:241-248`
+(floating text pill, `z-index:1000`, `.static`/`.live` modifier classes). `main.js`
+drives it from exactly 3 call sites (lines 123, 206, 295), each doing
+`document.getElementById("DataModeBadge")` then setting `.textContent`,
+`.className` (`"static"` or `"live"`), and `.title`.
+
+Decision: **keep the element id and all 3 `main.js` call sites unchanged — zero JS
+diff required.** At Stage 3, only `index.html` changes: move the `#DataModeBadge`
+div to live inside the new brand-toggle (as a sibling of the brand-mark icon), and
+replace its CSS (`index.html:241-248`) with the small-corner-dot styling already
+prototyped as `.status-dot`/`.status-dot.live` in the mockup — reusing the existing
+`.static`/`.live` class names `main.js` already toggles, so no `main.js` edit is
+needed at all for this element.
+
 ## Mockups (interactive, published as Claude Artifacts — not part of this repo)
 
 1. v1 collapsible drawer (superseded): `astriagraph-mobile-mockup.html`
@@ -120,7 +161,8 @@ record of the decisions they demonstrated.
 
 ## Open items / next steps
 
-- A third independent Review/Validation pass on the fixed v3 mockup has not yet run.
+- Round 3 review complete; both findings from it (drag/outside-click conflict,
+  badge integration plan) are fixed/documented above.
 - Stage 3 Execution (actual edits to `index.html` and `main.js` in this worktree) has
   not started — everything above is Design/Planning only.
 - No commit, push, or merge beyond this planning doc is authorized yet.
