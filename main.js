@@ -808,6 +808,9 @@ function StartDataLoad()
         return
     DataLoadStarted = true
     GetDataSources()
+    var debcb = window.document.getElementById("DebrisToggle")
+    if (debcb && debcb.checked)
+        OnToggleDebris()
 }
 
 var preload
