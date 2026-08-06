@@ -120,6 +120,32 @@ fallback, the `position:relative`+`overflow:hidden` clipping fix from Round 2 ho
 at every tested width, the two panels' mutual-exclusivity behavior is correct, and
 `main.js` is verified still completely untouched (no Stage 3 work has started).
 
+### Round 4 — independent validation pass
+
+A fourth review, scoped as a holistic readiness check rather than a re-litigation of
+settled findings, independently re-traced the Round 3 `justDragged` fix (confirmed
+correct — the synthetic post-drag click is genuinely suppressed regardless of where
+the drag ends) and confirmed live git/repo state matches every claim in this doc
+exactly (`index.html`/`main.js` byte-identical to base; only this doc has changed).
+It also returned **STOP**, on real gaps:
+
+- **Finding 1 (Medium) — a real bug in this doc's own Round 3 badge-integration
+  plan**, described and fixed just below.
+- **Finding 4 (Low-Medium) — disposition of the old `#InputsDiv`/`#DisclaimerDiv`/
+  `.modal` DOM+CSS was unstated.** Fixed — see Settled decisions below.
+- **Finding 5 (Low) — the exact breakpoint value validated across all 3 prior
+  rounds was never pinned as a requirement.** Fixed — see Settled decisions below.
+- Two further items were raised as open **product decisions for the human, not
+  planning defects** (not something an independent reviewer should resolve
+  unilaterally): whether the mockup's visual re-skin (color tokens, serif brand
+  wordmark) is binding for Stage 3 or just structural reference, since the real
+  site currently has no custom fonts and uses different named CSS colors; and
+  whether the real `<select>` elements — which are jQuery UI `.selectmenu()`
+  widgets (`main.js:655,666,677`) generating their own popup DOM, not plain
+  `<select>`s — should be swapped to native `<select>` for Stage 3 or kept and
+  tested empirically inside the new panel's clip/scroll/transition machinery.
+  **Still open** — not resolved by this update; see Open items below.
+
 ## Settled decisions
 
 - Logo image + link (`astria.tacc.utexas.edu`) removed entirely.
@@ -131,9 +157,27 @@ at every tested width, the two panels' mutual-exclusivity behavior is correct, a
   navigationHelpButton, fullscreenButton, infoBox`) fully disabled and replaced by
   custom menu rows calling the equivalent Cesium APIs.
 - One unified design across desktop and mobile via CSS container queries, not a
-  binary breakpoint split.
+  binary breakpoint split. **The reviewed and validated breakpoint is a container
+  inline-size of 460px**: at ≤460px the menu renders as the full-width drawer
+  (the safe base/fallback presentation); at ≥461px it enhances to the compact
+  ~280px anchored dropdown. Stage 3 must use this exact value — it's what every
+  collision/positioning fix across all 4 review rounds was actually validated
+  against; a different number is unreviewed.
+- **The whole design must read as responsive, not device-binary, at every real
+  screen size** — phones from ~320px up through desktop, portrait and landscape.
+  This is the point of the container-query approach (enhancement from one working
+  base, not a mobile-build/desktop-build split) and is a hard requirement for
+  Stage 3, not just a mockup property: no fixed pixel layout that only "happens to
+  work" at the specific widths reviewed (375/520/640) is acceptable — the fluid
+  behavior between and beyond those points is what was actually being validated
+  via the mockup's drag-resize handle.
+- **The old `#InputsDiv`, `#DisclaimerDiv`, `.modal`/`.modal-content` DOM elements
+  and their CSS blocks in `index.html` are removed at Stage 3**, not left in place
+  hidden or dead — the new unified menu structurally supersedes all of their
+  content (search/filter fields, legend, disclaimer text, and the Data Sources
+  popup's content move into the new menu's accordion sections).
 
-### Stage 3 integration plan — `#DataModeBadge` (closes Round 3 Finding B)
+### Stage 3 integration plan — `#DataModeBadge` (closes Round 3 Finding B — corrected by Round 4 Finding 1)
 
 Confirmed via direct read of the real files: `index.html:23` declares
 `<div id="DataModeBadge" title="Data mode"></div>`, styled at `index.html:241-248`
@@ -144,11 +188,22 @@ drives it from exactly 3 call sites (lines 123, 206, 295), each doing
 
 Decision: **keep the element id and all 3 `main.js` call sites unchanged — zero JS
 diff required.** At Stage 3, only `index.html` changes: move the `#DataModeBadge`
-div to live inside the new brand-toggle (as a sibling of the brand-mark icon), and
-replace its CSS (`index.html:241-248`) with the small-corner-dot styling already
-prototyped as `.status-dot`/`.status-dot.live` in the mockup — reusing the existing
-`.static`/`.live` class names `main.js` already toggles, so no `main.js` edit is
-needed at all for this element.
+div to live inside the new brand-toggle (as a sibling of the brand-mark icon).
+
+**Correction from Round 4 (this was wrong in the original Round 3 fix and would
+have shipped a visible regression):** `main.js` sets `badge.className = "static"` /
+`"live"` — a full **overwrite** of the class attribute, not an addition. The
+mockup's prototype CSS keys off a bare class (`.status-dot{...}
+.status-dot.live{...}`), which only worked in the mockup because nothing there
+ever changes the dot's class via JS. If Stage 3 copied that pattern literally, the
+first time `main.js`'s badge IIFE runs (i.e., on every real page load) it would
+overwrite away the `status-dot` class name and strip the dot's base shape/
+position/border styling entirely. **The real CSS must key off the element's ID,
+exactly like the current, already-working styling does today** —
+`#DataModeBadge{ /* dot base: size, position, border */ }
+#DataModeBadge.live{ /* color */ }` — not a bare `.status-dot` class selector.
+The id never changes, so anchoring to it survives `main.js`'s `className`
+overwrites the same way the current pill styling already does.
 
 ## Mockups (interactive, published as Claude Artifacts — not part of this repo)
 
@@ -163,6 +218,18 @@ record of the decisions they demonstrated.
 
 - Round 3 review complete; both findings from it (drag/outside-click conflict,
   badge integration plan) are fixed/documented above.
+- Round 4 validation complete; Findings 1, 4, and 5 are fixed/documented above.
+- **Two Round 4 items remain genuinely open — human product decisions, not
+  planning defects:**
+  1. Is the mockup's visual re-skin (dark glass color tokens, `Georgia` serif
+     brand wordmark) binding for Stage 3, or is Stage 3 scoped to structural/
+     responsive changes only, keeping the site's current look (no custom fonts,
+     existing named CSS colors)?
+  2. The real `<select>` elements are jQuery UI `.selectmenu()` widgets
+     (`main.js:655,666,677`), not plain `<select>`s — they generate their own
+     popup DOM. Should Stage 3 swap them to native `<select>` elements, or keep
+     jQuery UI's widget and empirically test its popup positioning inside the
+     new menu panel's clip/scroll/transition machinery first?
 - Stage 3 Execution (actual edits to `index.html` and `main.js` in this worktree) has
   not started — everything above is Design/Planning only.
 - No commit, push, or merge beyond this planning doc is authorized yet.
