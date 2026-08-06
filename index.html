@@ -32,7 +32,7 @@
     </button>
 
     <div class = "time-panel" id = "TimePanel">
-      <div class = "time-readout" id = "TimeReadout">&mdash;</div>
+      <div class = "time-readout"><span id = "TimeReadout">&mdash;</span> <span class = "tz-label">UTC</span></div>
       <div class = "time-controls">
 	<button class = "tbtn" id = "TimeRewindBtn" type = "button" aria-label = "Rewind">&#9668;&#9668;</button>
 	<button class = "tbtn play" id = "TimePlayBtn" type = "button" aria-label = "Play or pause">&#9654;</button>
@@ -177,6 +177,11 @@
       <p class = "menu-copy"><strong>Touch:</strong> one-finger drag to rotate, pinch to zoom, two-finger drag to pan.</p>
     </div>
 
+    <div class = "detail-card" id = "DetailCard">
+      <button class = "detail-close" id = "DetailCloseBtn" type = "button" aria-label = "Close details">&#10005;</button>
+      <div class = "detail-body" id = "DetailBody"></div>
+    </div>
+
     <style>
       @import url(https://cdn.jsdelivr.net/npm/cesium@1.58/Build/Cesium/Widgets/widgets.css);
 
@@ -291,6 +296,7 @@
       }
       .time-panel.open { opacity: 1; transform: translateY(0); visibility: visible; pointer-events: auto; transition: opacity .2s ease, transform .2s ease; }
       .time-readout { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; color: var(--ink-dim); margin-bottom: 10px; }
+      .tz-label { letter-spacing: .04em; opacity: .7; }
       .time-controls { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
       .tbtn {
       background: rgba(255,255,255,0.08); border: 1px solid var(--line); color: var(--ink);
@@ -391,6 +397,36 @@
       }
       .help-panel.open { opacity: 1; transform: translateY(0); visibility: visible; pointer-events: auto; transition: opacity .2s ease, transform .2s ease; }
       .help-panel .menu-copy:last-child { margin-bottom: 0; }
+
+      /* ---- entity detail card: shows what OnTrackClick/DisplayOrbit already
+	 build into ent.description now that the native Cesium InfoBox is
+	 disabled. Bottom-anchored so it never competes with the brand/time
+	 toggle (top-left) or menu toggle/panel (top-right). */
+      .detail-card {
+      position: absolute; z-index: 18; left: 10px; right: 10px; bottom: 10px; max-height: 42%;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+      padding: 16px 16px 12px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      opacity: 0; transform: translateY(8px) scale(.98); visibility: hidden; pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+      overflow-y: auto;
+      }
+      .detail-card.open { opacity: 1; transform: translateY(0) scale(1); visibility: visible; pointer-events: auto; transition: opacity .2s ease, transform .2s ease; }
+      @container app (min-width: 461px) {
+      .detail-card { right: auto; width: 360px; max-height: 55%; }
+      }
+      .detail-close {
+      position: absolute; top: 8px; right: 8px; z-index: 1;
+      width: 32px; height: 32px; min-width: 44px; min-height: 44px; margin: -6px -6px 0 0;
+      display: flex; align-items: center; justify-content: center;
+      background: transparent; border: 0; border-radius: 10px; color: var(--ink-dim);
+      font-size: 13px; cursor: pointer;
+      }
+      .detail-close:hover { background: rgba(255,255,255,0.06); color: var(--ink); }
+      .detail-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .detail-body { padding-right: 30px; font-size: 12.5px; color: var(--ink); }
+      .detail-body table { width: 100%; border-collapse: collapse; font-size: 12px; }
+      .detail-body td, .detail-body th { padding: 5px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+      .detail-body a { color: var(--accent); }
     </style>
   </body>
 
@@ -469,7 +505,11 @@
           if (!open && !(opts && opts.silent)) menuToggle.focus()
         }
         menuToggle.addEventListener("click", function () {
-          setMenu(!menuPanel.classList.contains("open"))
+          var opening = !menuPanel.classList.contains("open")
+          // Opening the menu means the visitor is done inspecting a specific
+          // RSO — close the detail card so it can't collide with the drawer.
+          if (opening && window.CsView) window.CsView.selectedEntity = undefined
+          setMenu(opening)
         })
 
         var helpBtn = document.getElementById("HelpBtn")
@@ -479,11 +519,59 @@
           helpBtn.setAttribute("aria-expanded", open ? "true" : "false")
         }
 
+        // ---- entity detail card (replaces Cesium's disabled native InfoBox) ----
+        var detailCard = document.getElementById("DetailCard")
+        var detailBody = document.getElementById("DetailBody")
+        var detailCloseBtn = document.getElementById("DetailCloseBtn")
+        function setDetailCard(open) {
+          detailCard.classList.toggle("open", open)
+          if (!open) detailBody.innerHTML = ""
+        }
+        detailCloseBtn.addEventListener("click", function (e) {
+          e.stopPropagation()
+          // Clearing selectedEntity is the single source of truth; it also
+          // clears the orbit/label CsView already draws for the selection,
+          // so "closed" means fully deselected, not just visually hidden.
+          if (window.CsView) window.CsView.selectedEntity = undefined
+        })
+        if (window.CsView) {
+          var detailEntityHandler = null
+          var detailEntity = null
+          function renderDetail() {
+            var descProp = detailEntity && detailEntity.description
+            var html = descProp ? (descProp.getValue ? descProp.getValue() : descProp) : ""
+            if (html) {
+              detailBody.innerHTML = html
+              setDetailCard(true)
+            }
+          }
+          window.CsView.selectedEntityChanged.addEventListener(function (entity) {
+            if (detailEntity && detailEntityHandler) {
+              detailEntity.definitionChanged.removeEventListener(detailEntityHandler)
+            }
+            detailEntity = null
+            detailEntityHandler = null
+            if (Cesium.defined(entity)) {
+              detailEntity = entity
+              // ent.description is set asynchronously by DisplayOrbit, after
+              // CsView.zoomTo's fly-to animation resolves — definitionChanged
+              // fires when that assignment happens, so this catches it
+              // whenever it actually lands rather than polling for it.
+              detailEntityHandler = function () { renderDetail() }
+              entity.definitionChanged.addEventListener(detailEntityHandler)
+              renderDetail()
+            } else {
+              setDetailCard(false)
+            }
+          })
+        }
+
         window.addEventListener("keydown", function (e) {
           if (e.key !== "Escape") return
           if (menuPanel.classList.contains("open")) setMenu(false)
           if (timePanel.classList.contains("open")) { setTimePanel(false); brandToggle.focus() }
           if (helpPanel.classList.contains("open")) { setHelp(false); helpBtn.focus() }
+          if (detailCard.classList.contains("open") && window.CsView) { window.CsView.selectedEntity = undefined }
         })
 
         document.addEventListener("click", function (e) {
