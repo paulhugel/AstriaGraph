@@ -642,6 +642,15 @@ function OnTrackClick()
 		})
 	    })
     }
+    else
+    {
+	for (var i = 0; i < CsOrbitEnt.length; i++)
+	{
+	    CsOrbitEnt[i].polyline.width = 0
+	    CsOrbitEnt[i].label.text = ""
+	}
+	CsOrbitEnt = []
+    }
 }
 
 $("#SearchBox").on("autocompleteselect", function (event, ui)

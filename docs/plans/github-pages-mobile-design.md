@@ -349,7 +349,107 @@ pane at both desktop and true 375px mobile viewport widths (`git diff --stat`:
 
 ## Open items / next steps
 
-- Stage 3 Execution is complete and live-verified, but **uncommitted**. This
-  worktree's `index.html`/`main.js` changes are Level D only — no commit, push, or
-  merge is authorized yet. A separate explicit authorization (Level E at minimum)
-  is required before this work is committed.
+- Stage 3 Execution is complete and live-verified, committed at `ac45bce`, pushed,
+  and merged to `master` at `b499e1a`. Live on
+  https://paulhugel.github.io/AstriaGraph/, redeploy confirmed via
+  `pages.yml` workflow run success.
+
+## Post-deploy fix — entity detail card + UTC label (committed `51981f9`)
+
+A user report against the live site ("selecting RSO brings up its orbit but not
+its data card") was verified live (not assumed): `ent.description` was correctly
+computed by unmodified `main.js` (`OnTrackClick`/`DisplayOrbit`), but had no UI
+surface to render in, since Stage 3 set `infoBox: false` with the replacement
+explicitly deferred (Round 4 Finding 6). Fixed with an `index.html`-only addition:
+a `.detail-card` panel matching the existing design system, bottom-anchored to
+avoid the brand/time toggle (top-left) and menu toggle/panel (top-right), bound to
+`CsView.selectedEntityChanged` plus each entity's `definitionChanged` event (since
+`ent.description` is set asynchronously, after the camera's fly-to resolves — not
+synchronously on selection). A small "UTC" timezone label was added to the time
+readout in the same pass (timezone itself stays UTC, per explicit decision).
+Live-tested at desktop and 375px mobile widths before commit.
+
+## Orbit-cleanup issue — Design/Planning/Execution complete, live-tested, uncommitted
+
+**Found during verification of the detail-card fix, confirmed pre-existing (not a
+regression from this session's work):** closing/deselecting an RSO leaves its
+orbit polyline and `(n)` label drawn on the globe. Selecting a *different* entity
+still correctly clears the old orbit — only bare deselection is affected.
+
+**Root cause (Design phase, confirmed via direct code read):** `main.js`'s
+`OnTrackClick()` (~line 630) is the listener that owns orbit/label drawing on
+`CsView.selectedEntityChanged`. (`index.html`'s detail-card panel, added in the
+prior `51981f9` commit, also listens on this same event to show/hide its own
+content — independently, since Cesium invokes every registered listener and
+OnTrackClick re-reads `CsView.selectedEntity` directly rather than depending on
+listener order.) Its entire body is gated behind `if (Cesium.defined(CsView.selectedEntity))` — the
+deselection case has no `else` branch, so nothing runs when `selectedEntity`
+becomes `undefined`. The exact clear-loop needed already exists in two other
+places (`main.js:317-322` inside `DisplayObjects`, and `main.js:489-494` inside
+`DisplayOrbit`) — it zeroes `CsOrbitEnt[i].polyline.width`, blanks
+`CsOrbitEnt[i].label.text`, and resets `CsOrbitEnt = []`.
+
+**Independent review (distinct actor, Level A read-only):** PASS. Verified the
+root-cause claim byte-for-byte against live `main.js`, applied the proposed diff
+to a scratch copy and confirmed it parses (`node --check`), confirmed no
+concurrency/double-clear risk (JavaScript is single-threaded — the three
+`CsOrbitEnt`-clearing sites can never interleave), and confirmed `CsOrbitEnt` is
+always reassigned (`= []`), never mutated in place, so there's no stale-closure
+risk from the async `.then()` callback. One documentation-only finding (the
+"sole listener" phrasing above was corrected to note the detail-card panel's
+independent listener) — did not affect the verdict.
+
+**Fix executed (main.js, +9/-0 lines) and live-tested — not yet committed:**
+add an `else` branch to `OnTrackClick` reusing that exact clear-loop verbatim:
+
+```js
+function OnTrackClick()
+{
+    if (Cesium.defined(CsView.selectedEntity))
+    {
+	var ent = CsView.selectedEntity
+	var obj = ObjData[ent.id] || {}
+	CsView.zoomTo(ent,
+		      new Cesium.HeadingPitchRange(0, -Math.PI/2, 1E7)).
+	    then(function () {
+		DisplayOrbit(ent)
+		TrackAnalytics('Space Object Selected', {
+		    data_source: obj.DataSource || '',
+		})
+	    })
+    }
+    else
+    {
+	for (var i = 0; i < CsOrbitEnt.length; i++)
+	{
+	    CsOrbitEnt[i].polyline.width = 0
+	    CsOrbitEnt[i].label.text = ""
+	}
+	CsOrbitEnt = []
+    }
+}
+```
+
+**Known edge case, pre-existing, not worsened by this proposal:** rapidly
+deselecting while a previous entity's `zoomTo().then(DisplayOrbit)` is still
+in-flight could still redraw that stale orbit after the clear runs, since nothing
+cancels the in-flight promise. The original code has this identical race today
+(rapidly selecting entity A then B before A's flight resolves). General
+promise-cancellation is out of scope for this minimal fix.
+
+**Live verification (desktop, real clicks — not programmatic selection, which was
+separately confirmed unreliable for triggering `zoomTo`'s promise resolution):**
+selected a real entity, confirmed `polyline.width === 1` and `label.text === "(1)"`
+before closing; closed via the detail card's X button — confirmed
+`polyline.width === 0` and `label.text === ""` after. Repeated via the Escape key
+path with the same result. Re-selecting a different entity still correctly clears
+the prior orbit (unchanged `if`-branch behavior). Incidentally reproduced the
+documented "known edge case" live (a rapid, artificial programmatic
+select-then-deselect let a stale in-flight `DisplayOrbit` redraw after
+deselection) — confirms the edge-case documentation above was accurate, and that
+it requires an adversarial timing pattern a real user is very unlikely to hit
+through normal clicking.
+
+**Status:** Design, Planning, independent Review, and Execution are all complete
+and live-verified. Uncommitted — Level D only. A separate Level E (commit)
+authorization is required, same as every prior code-change phase this session.
