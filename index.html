@@ -1,7 +1,7 @@
 <!--
  index.html - Main page for AstriaGraph.
  Copyright (C) 2018-2019 University of Texas
- 
+
  This program is free software: you can redistribute it and/or modify
  it under the terms of the GNU General Public License as published by
  the Free Software Foundation, either version 3 of the License, or
@@ -11,7 +11,7 @@
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
- 
+
  You should have received a copy of the GNU General Public License
  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
@@ -20,147 +20,192 @@
   <body>
     <div id = "Loader"></div>
 
-    <div id = "DataModeBadge" title = "Data mode"></div>
-
     <div id = "MainDisplay"></div>
 
-    <div id = "InputsDiv">
-      <div style = "float: left; padding: 5px;">
-      <a href = "http://astria.tacc.utexas.edu" target = "_blank">
-	<img src = "images/AstriaLogo.png" title = "Astria"/></a>
-      <p></p>
-      <h1 style = "color: white; font-size: 2.75em;">AstriaGraph</h1>
+    <button class = "brand-toggle" id = "BrandToggle" type = "button"
+	    aria-expanded = "false" aria-controls = "TimePanel"
+	    aria-label = "AstriaGraph &mdash; toggle time controls">
+      <span class = "brand-mark">
+	<span id = "DataModeBadge" title = "Data mode"></span>
+      </span>
+      <span class = "brand-name">AstriaGraph</span>
+    </button>
+
+    <div class = "time-panel" id = "TimePanel">
+      <div class = "time-readout" id = "TimeReadout">&mdash;</div>
+      <div class = "time-controls">
+	<button class = "tbtn" id = "TimeRewindBtn" type = "button" aria-label = "Rewind">&#9668;&#9668;</button>
+	<button class = "tbtn play" id = "TimePlayBtn" type = "button" aria-label = "Play or pause">&#9654;</button>
+	<button class = "tbtn" id = "TimeFfBtn" type = "button" aria-label = "Fast forward">&#9658;&#9658;</button>
+	<span class = "speed" id = "TimeSpeedLabel">1&times;</span>
       </div>
+      <div class = "scrub" id = "TimeScrub">
+	<div class = "scrub-fill" id = "TimeScrubFill"></div>
+	<div class = "scrub-handle" id = "TimeScrubHandle"></div>
+      </div>
+    </div>
 
-      <div style = "float: left; padding: 5px;">
-	<fieldset>
-	  <legend>Resident space object search criteria</legend>
+    <button class = "menu-toggle" id = "MenuToggle" type = "button"
+	    aria-expanded = "false" aria-controls = "MenuPanel" aria-label = "Open menu">
+      <span class = "bars"><span></span><span></span><span></span></span>
+    </button>
 
-	  <input type = "text" id = "SearchBox" placeholder = "Search by name...">
+    <div class = "menu-panel" id = "MenuPanel">
 
-	  <label for = "DataSrcSelect">Data source</label> <br>
-	  <select name = "DataSrcSelect" id = "DataSrcSelect"> </select>
-	  <p> </p>
+      <div class = "menu-section" id = "FilterSection">
+	<button class = "menu-row accordion" type = "button" aria-expanded = "false" aria-controls = "FilterBody">
+	  <span>Filter</span><span class = "chev">&#8964;</span>
+	</button>
+	<div class = "accordion-body-wrap"><div class = "accordion-body" id = "FilterBody"><div class = "accordion-body-inner">
 
-	  <label for = "OriginSelect">Country of origin</label> <br>
-	  <select name = "OriginSelect" id = "OriginSelect"> </select>
-	  <p> </p>
+	  <p class = "legend-label">Legend</p>
+	  <ul class = "legend-grid">
+	    <li><span class = "dot" style = "background:DarkOrange;"></span> Active satellite</li>
+	    <li><span class = "dot" style = "background:Cyan;"></span> Inactive satellite</li>
+	    <li><span class = "dot" style = "background:MediumOrchid;"></span> Rocket body</li>
+	    <li><span class = "dot" style = "background:Gray;"></span> Debris</li>
+	    <li><span class = "dot" style = "background:DeepPink;"></span> Uncategorized</li>
+	    <li><span class = "dot" style = "background:Gold;"></span> Status unavailable</li>
+	  </ul>
 
-	  <label for = "RegimeSelect">Orbit regime</label> <br>
-	  <select name = "RegimeSelect" id = "RegimeSelect">
+	  <div class = "menu-divider" style = "margin:4px -16px 12px;"></div>
+
+	  <input type = "text" id = "SearchBox" class = "field-input" placeholder = "Search by name...">
+
+	  <label for = "DataSrcSelect" class = "field-label">Data source</label>
+	  <select name = "DataSrcSelect" id = "DataSrcSelect" class = "field-select"></select>
+
+	  <label for = "OriginSelect" class = "field-label">Country of origin</label>
+	  <select name = "OriginSelect" id = "OriginSelect" class = "field-select"></select>
+
+	  <label for = "RegimeSelect" class = "field-label">Orbit regime</label>
+	  <select name = "RegimeSelect" id = "RegimeSelect" class = "field-select">
 	    <option value = "ALL" selected = "selected">All</option>
 	    <option value = "LEO">Low Earth orbit (LEO)</option>
 	    <option value = "MEO">Medium Earth orbit (MEO)</option>
 	    <option value = "GEO">Geo-synchronous/stationary orbit (GSO/GEO)</option>
 	    <option value = "HEO">High Earth orbit (HEO)</option>
 	  </select>
-	  <p> </p>
 
-	  <input type = "checkbox" name = "DebrisToggle" id = "DebrisToggle">
-	  <label for = "DebrisToggle">Display rocket bodies and debris</label></input>
-	</fieldset>
+	  <label class = "field-check">
+	    <input type = "checkbox" name = "DebrisToggle" id = "DebrisToggle">
+	    Display rocket bodies and debris
+	  </label>
+
+	</div></div></div>
       </div>
 
-      <div style = "float: left; padding: 5px;">
-	<fieldset>
-	  <legend style = "color: white;">Legend</legend>
-	  <ul>
-	    <li style = "color: DarkOrange;">Active satellite</li>
-	    <li style = "color: cyan;">Inactive satellite</li>
-	    <li style = "color: MediumOrchid;">Rocket body</li>
-	    <li style = "color: gray;">Debris</li>
-	    <li style = "color: DeepPink;">Uncategorized</li>
-	    <li style = "color: Gold;">Status unavailable</li>
+      <div class = "menu-section" id = "SourcesSection">
+	<button class = "menu-row accordion" type = "button" aria-expanded = "false" aria-controls = "SourcesBody">
+	  <span>Sources</span><span class = "chev">&#8964;</span>
+	</button>
+	<div class = "accordion-body-wrap"><div class = "accordion-body" id = "SourcesBody"><div class = "accordion-body-inner">
+
+	  <p class = "menu-subhead">Data Sources</p>
+	  <p class = "menu-copy">This deployment of AstriaGraph is a static build hosted on GitHub Pages.
+	    Object data is fetched on a fixed schedule from the two sources below and republished as
+	    static files; there is no live backend or orbit-determination pipeline behind this view.</p>
+	  <ul class = "menu-list">
+	    <li>CelesTrak (<a href = "https://celestrak.org/NORAD/elements/" target = "_blank" rel = "noopener">celestrak.org</a>)
+	      &mdash; orbital elements and operational status for active satellites.</li>
+	    <li>Space-Track.org / USSTRATCOM (<a href = "https://www.space-track.org" target = "_blank" rel = "noopener">space-track.org</a>)
+	      &mdash; the comprehensive on-orbit cataloged debris population.</li>
+	    <li>Optional analytics: AstriaGraph uses Amplitude to receive aggregate interaction events
+	      such as filter selections, object counts, data mode, and source labels. Object names and
+	      catalog identifiers are not sent.</li>
 	  </ul>
-	</fieldset>
+
+	  <p class = "menu-subhead">Orbit Determination</p>
+	  <p class = "menu-copy">This deployment does not run orbit determination itself; the elements
+	    shown are taken as-is from the sources above. The broader AstriaGraph project this fork
+	    descends from includes an open-source OD library, based on the Orekit astrodynamics
+	    framework, used elsewhere to fit orbits from radar and telescope tracking data. The OD
+	    source code is available at
+	    <a href = "https://github.com/ut-astria/orbdetpy" target = "_blank" rel = "noopener">ut-astria/orbdetpy</a>.</p>
+
+	  <p class = "menu-subhead">Visualization</p>
+	  <p class = "menu-copy">Resident space object data obtained from the sources listed above are
+	    stored internally as Cartesian vectors in the J2000 reference frame. Objects and orbits are
+	    visualized using the equations of motion of the Kepler two-body problem. In order to reduce
+	    computational cost to the browser, perturbations from Earth oblateness, third bodies,
+	    atmospheric drag, solar radiation pressure etc., are not taken into account. The source code
+	    for this deployment is available at
+	    <a href = "https://github.com/paulhugel/AstriaGraph" target = "_blank" rel = "noopener">paulhugel/AstriaGraph</a>,
+	    a fork of the original
+	    <a href = "https://github.com/ut-astria/AstriaGraph" target = "_blank" rel = "noopener">ut-astria/AstriaGraph</a>.</p>
+
+	</div></div></div>
       </div>
+
+      <div class = "menu-section" id = "DisclaimerSection">
+	<button class = "menu-row accordion" type = "button" aria-expanded = "false" aria-controls = "DisclaimerBody">
+	  <span>Disclaimer</span><span class = "chev">&#8964;</span>
+	</button>
+	<div class = "accordion-body-wrap"><div class = "accordion-body" id = "DisclaimerBody"><div class = "accordion-body-inner">
+	  <p class = "menu-copy">AstriaGraph is visualized in a public-private partnership. As part of
+	    this partnership, the partners have agreed to limit commercial uses of this representation
+	    of AstriaGraph by third parties. You can, without permission, copy, modify, distribute, or
+	    display AstriaGraph information for non-commercial uses. For any other permissible uses,
+	    contact those listed as the &quot;Data Source&quot; of the appropriate information.</p>
+	</div></div></div>
+      </div>
+
+      <div class = "menu-divider"></div>
+
+      <button class = "menu-row action" id = "ResetViewBtn" type = "button" data-autoclose = "true">
+	<span>Reset view</span><span class = "icon">&#10558;</span>
+      </button>
+      <button class = "menu-row action" id = "SceneModeBtn" type = "button">
+	<span>Scene mode</span><span class = "pill" id = "SceneModeLabel">3D</span>
+      </button>
+      <button class = "menu-row action" id = "FullscreenBtn" type = "button" data-autoclose = "true">
+	<span>Full screen</span><span class = "icon">&#10530;</span>
+      </button>
+      <button class = "menu-row action" id = "HelpBtn" type = "button" aria-expanded = "false" aria-controls = "HelpPanel">
+	<span>Help</span><span class = "icon">?</span>
+      </button>
+
+      <div class = "menu-divider"></div>
+
+      <a class = "menu-row action link" href = "https://github.com/paulhugel/AstriaGraph" target = "_blank" rel = "noopener">
+	<span>View source on GitHub</span><span class = "icon">&#8599;</span>
+      </a>
     </div>
 
-    <div id = "DisclaimerDiv">
-      <h4 style = "color: white">AstriaGraph is visualized in a public-private partnership.
-	As part of this partnership, the partners have agreed to limit commercial uses of this representation 
-	of AstriaGraph by third parties. You can, without permission, copy, modify, distribute, or display 
-	AstriaGraph information for non-commercial uses. For any other permissible uses, contact 
-	those listed as the &quot;Data Source&quot; of the appropriate information. Click 
-	<a href = "javascript:;" id = "DataSrcInfo"> here </a> for details about the data sources and visualization.</h4>
-    </div>
-
-    <div id = "DataSrcPopup" class = "modal">
-      <div class = "modal-content">
-	<span class = "close">&times;</span>
-	<h1>Data Sources</h1>
-	<p>This deployment of AstriaGraph is a static build hosted on GitHub Pages. Object data is
-	fetched on a fixed schedule from the two sources below and republished as static files; there
-	is no live backend or orbit-determination pipeline behind this view.</p>
-	<ol>
-	    <li>CelesTrak (<a href = "https://celestrak.org/NORAD/elements/" target = "_blank">https://celestrak.org/NORAD/elements/</a>) &mdash; orbital elements and operational status for active satellites.</li>
-	    <li>Space-Track.org / USSTRATCOM (<a href = "https://www.space-track.org" target = "_blank">https://www.space-track.org</a>) &mdash; the comprehensive on-orbit cataloged debris population.</li>
-	    <li>Optional analytics: AstriaGraph uses Amplitude to receive aggregate interaction events such as filter selections, object counts, data mode, and source labels. Object names and catalog identifiers are not sent.</li>
-	</ol>
-
-	<h1>Orbit Determination</h1>
-	This deployment does not run orbit determination itself; the elements shown are taken as-is from
-	the sources above. The broader AstriaGraph project this fork descends from includes an
-	open-source OD library, based on the Orekit astrodynamics framework, used elsewhere to fit
-	orbits from radar and telescope tracking data. The OD source code is available at
-	<a href = "https://github.com/ut-astria/orbdetpy" target = "_blank">https://github.com/ut-astria/orbdetpy</a>.
-
-	<h1>Visualization</h1>
-	Resident space object data obtained from the sources listed above are stored internally as Cartesian
-	vectors in the J2000 reference frame. Objects and orbits are visualized using the equations of motion of
-	the Kepler two-body problem. In order to reduce computational cost to the browser, perturbations from
-	Earth oblateness, third bodies, atmospheric drag, solar radiation pressure etc., are not taken into
-	account. The source code for this deployment is available at
-	<a href = "https://github.com/paulhugel/AstriaGraph" target = "_blank">https://github.com/paulhugel/AstriaGraph</a>,
-	a fork of the original <a href = "https://github.com/ut-astria/AstriaGraph" target = "_blank">ut-astria/AstriaGraph</a>.
-      </div>
+    <div class = "help-panel" id = "HelpPanel">
+      <p class = "menu-copy"><strong>Mouse:</strong> left-drag to rotate, scroll to zoom, right-drag to pan.</p>
+      <p class = "menu-copy"><strong>Touch:</strong> one-finger drag to rotate, pinch to zoom, two-finger drag to pan.</p>
     </div>
 
     <style>
       @import url(https://cdn.jsdelivr.net/npm/cesium@1.58/Build/Cesium/Widgets/widgets.css);
+
+      :root {
+      --bg: #0b0c0f; --surface: #16181d; --ink: #f2f1ec; --ink-dim: #9aa0a8;
+      --accent: #ff9d3d; --line: rgba(242,241,236,0.14); --chip-bg: rgba(255,157,61,0.14);
+      --panel: rgba(17,17,20,0.95);
+      }
+
+      * { box-sizing: border-box; }
+      @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+
       html, body, #MainDisplay {
       top: 0; left: 0; width: 100%; height: 100%;
-      margin: 0; padding: 0; overflow: hidden
+      margin: 0; padding: 0; overflow: hidden;
+      background: var(--bg); color: var(--ink);
+      font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
       }
 
-      #InputsDiv {
-      position: absolute; top: 5px; left: 5px; width: calc(100% - 10px);
-      display: flex; flex-wrap: nowrap; align-items: flex-start;
+      body {
+      container-type: inline-size;
+      container-name: app;
       }
-
-      #InputsDiv > div { float: none !important; flex: 0 0 auto; }
-
-      #DisclaimerDiv {
-      position: absolute; bottom: 1%; left: 15%; width: 85%;
-      }
-
-      #SearchBox {
-      background-image: url("images/searchicon.png"); background-position: right;
-      background-repeat: no-repeat; width: 100%; font-size: 12pt;
-      padding: 10px 10px 10px 10px; border: 2px solid #ddd; margin-bottom: 12px;
-      }
-
-      #DataSrcSelect {
-      width : 100%; font-size: 12pt; padding: 10px 10px 10px 10px;
-      }
-
-      #OriginSelect {
-      width : 100%; font-size: 12pt; padding: 10px 10px 10px 10px;
-      }
-
-      #RegimeSelect {
-      width : 100%; font-size: 12pt; padding: 10px 10px 10px 10px;
-      }
-
-      legend { color : white; font-size: 12pt; }
-      label { color : white; font-size: 12pt; }
-      .ui-selectmenu-menu .ui-menu { max-height : 30vh; }
 
       #Loader {
       position: absolute;
       left: 50%;
       top: 50%;
-      z-index: 1;
+      z-index: 30;
       width: 150px;
       height: 150px;
       margin: -75px 0 0 -75px;
@@ -193,59 +238,159 @@
       }
 
       @-webkit-keyframes animatebottom {
-      from { bottom:-100px; opacity:0 } 
+      from { bottom:-100px; opacity:0 }
       to { bottom:0px; opacity:1 }
       }
 
-      @keyframes animatebottom { 
-      from{ bottom:-100px; opacity:0 } 
+      @keyframes animatebottom {
+      from{ bottom:-100px; opacity:0 }
       to{ bottom:0; opacity:1 }
       }
-      
-      .modal {
-      display: none;
-      position: fixed;
-      z-index: 1;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background-color: rgb(0,0,0);
-      background-color: rgba(0,0,0,0.4);
-      }
 
-      .modal-content {
-      background-color: #fefefe;
-      margin: 15% auto;
-      padding: 20px;
-      border: 1px solid #888;
-      width: 80%;
+      /* ---- upper-left: brand + time toggle ---- */
+      .brand-toggle {
+      position: absolute; z-index: 21; top: 12px; left: 10px;
+      display: flex; align-items: center; gap: 7px;
+      min-height: 44px; padding: 4px 10px 4px 4px;
+      background: transparent; border: 1px solid transparent; border-radius: 999px;
+      cursor: pointer; color: var(--ink); font-family: inherit;
       }
-
-      .close {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
+      .brand-toggle:hover { background: rgba(255,255,255,0.06); }
+      .brand-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .brand-mark {
+      position: relative;
+      width: 26px; height: 26px; border-radius: 50%; flex: 0 0 auto;
+      background: radial-gradient(circle at 35% 35%, #6fb7ff, #17335c 70%);
+      box-shadow: 0 0 0 2px rgba(255,255,255,0.15) inset;
       }
-
-      .close:hover,
-      .close:focus {
-      color: black;
-      text-decoration: none;
-      cursor: pointer;
-      }
-
-      /* Data mode badge */
+      /* Keyed off the #id alone, NOT a class — main.js does badge.className =
+	 "static"/"live" as a full overwrite (see main.js's DataModeBadge IIFE and
+	 its two error-path duplicates), which would strip any class-based selector
+	 the instant it runs. The id never changes, so anchoring to it survives that
+	 overwrite. This is the exact bug documented and fixed in
+	 docs/plans/github-pages-mobile-design.md's Round 4 Finding 1 — kept here as
+	 the corrected, real implementation. */
       #DataModeBadge {
-      position: absolute; top: 8px; left: 8px; z-index: 1000;
-      padding: 3px 6px; border-radius: 4px; font-size: 10px;
-      background-color: rgba(128,128,128,0.65); color: #fff;
-      pointer-events: none; /* do not block Cesium/UI clicks */
+      position: absolute; right: -2px; bottom: -2px; width: 9px; height: 9px; border-radius: 50%;
+      background: #9aa0a8; border: 2px solid #08090b; padding: 0;
+      /* main.js sets this element's textContent (e.g. "Static data") — that was
+	 the old visible pill's label; here it's a pure visual dot, so the text
+	 must be pushed out of view rather than left to overflow into the page. */
+      overflow: hidden; text-indent: 200%; white-space: nowrap;
       }
-      #DataModeBadge.live { background-color: rgba(0,128,0,0.65); }
-      #DataModeBadge.static { background-color: rgba(128,128,128,0.65); }
+      #DataModeBadge.live { background: #2ecc71; }
+      #DataModeBadge.static { background: #9aa0a8; }
+      .brand-name { font-family: Georgia, "Times New Roman", serif; font-size: 15px; letter-spacing: .01em; }
+
+      .time-panel {
+      position: absolute; z-index: 19; top: 58px; left: 10px; width: 240px;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+      padding: 13px 14px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      opacity: 0; transform: translateY(-6px); visibility: hidden; pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+      }
+      .time-panel.open { opacity: 1; transform: translateY(0); visibility: visible; pointer-events: auto; transition: opacity .2s ease, transform .2s ease; }
+      .time-readout { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; color: var(--ink-dim); margin-bottom: 10px; }
+      .time-controls { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; }
+      .tbtn {
+      background: rgba(255,255,255,0.08); border: 1px solid var(--line); color: var(--ink);
+      width: 44px; height: 44px; border-radius: 10px; font-size: 12px; cursor: pointer; flex: 0 0 auto;
+      }
+      .tbtn.play { background: var(--accent); border-color: var(--accent); color: #1a0e00; font-size: 12px; }
+      .tbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .speed { margin-left: auto; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; color: var(--ink-dim); }
+      .scrub { position: relative; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.14); cursor: pointer; }
+      .scrub-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0%; background: var(--accent); border-radius: 2px; pointer-events: none; }
+      .scrub-handle { position: absolute; left: 0%; top: 50%; width: 10px; height: 10px; margin: -5px 0 0 -5px; border-radius: 50%; background: var(--ink); box-shadow: 0 0 0 2px var(--accent); pointer-events: none; }
+
+      /* ---- upper-right: menu toggle + panel ---- */
+      .menu-toggle {
+      position: absolute; z-index: 21; top: 12px; right: 10px;
+      width: 44px; height: 44px; border-radius: 12px;
+      background: var(--panel); border: 1px solid var(--line); color: var(--ink);
+      display: flex; align-items: center; justify-content: center; cursor: pointer;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      }
+      .menu-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+      .menu-toggle .bars { display: flex; flex-direction: column; gap: 3px; width: 18px; }
+      .menu-toggle .bars span { height: 2px; background: var(--ink); border-radius: 1px; transition: transform .2s ease, opacity .2s ease; }
+      .menu-toggle.open .bars span:nth-child(1) { transform: translateY(5px) rotate(45deg); }
+      .menu-toggle.open .bars span:nth-child(2) { opacity: 0; }
+      .menu-toggle.open .bars span:nth-child(3) { transform: translateY(-5px) rotate(-45deg); }
+
+      .menu-panel {
+      /* safe default (no @container support): full-width drawer, same as the mobile
+	 presentation below — an unsupported browser gets a working, just-unresponsive
+	 menu instead of an unconstrained/unpredictable one. */
+      position: absolute; z-index: 20; top: 0; left: 0; right: 0; max-height: 86%; padding-top: 64px;
+      border-radius: 0 0 16px 16px;
+      background: var(--panel);
+      border: 1px solid var(--line); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      opacity: 0; transform: translateY(-8px) scale(.98); visibility: hidden; pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+      overflow-y: auto;
+      }
+      .menu-panel.open { opacity: 1; transform: translateY(0) scale(1); visibility: visible; pointer-events: auto; transition: opacity .2s ease, transform .2s ease; }
+
+      @container app (min-width: 461px) {
+      .menu-panel { top: 60px; left: auto; right: 10px; width: 300px; border-radius: 14px; max-height: 75%; padding-top: 0; }
+      }
+
+      .menu-row {
+      width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      min-height: 46px; padding: 0 16px; background: transparent; border: 0; border-bottom: 1px solid var(--line);
+      color: var(--ink); font-size: 13.5px; font-family: inherit; cursor: pointer; text-align: left;
+      }
+      .menu-row:last-child { border-bottom: 0; }
+      .menu-row:active { background: rgba(255,255,255,0.06); }
+      .menu-row:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+      .menu-row .chev { color: var(--ink-dim); transition: transform .2s ease; }
+      .menu-section.open .menu-row .chev { transform: rotate(180deg); }
+      .menu-row .icon { color: var(--ink-dim); font-size: 14px; }
+      .menu-row .pill { background: rgba(255,157,61,0.16); color: var(--accent); font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+      .menu-row.link { color: var(--ink); text-decoration: none; }
+
+      .accordion-body-wrap { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .25s ease; }
+      .menu-section.open .accordion-body-wrap { grid-template-rows: 1fr; }
+      .accordion-body { overflow: hidden; }
+      .accordion-body-inner { padding: 4px 16px 16px; }
+
+      .menu-subhead { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--accent); font-weight: 700; margin: 14px 0 6px; }
+      .menu-subhead:first-child { margin-top: 0; }
+      .menu-copy { margin: 0 0 8px; font-size: 12.5px; line-height: 1.55; color: var(--ink-dim); }
+      .menu-copy a { color: var(--accent); }
+      .menu-list { margin: 0 0 8px; padding-left: 18px; font-size: 12.5px; line-height: 1.55; color: var(--ink-dim); }
+      .menu-list a { color: var(--accent); }
+      .menu-list li { margin-bottom: 6px; }
+
+      .field-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-dim); margin: 10px 0 6px; }
+      .field-label:first-of-type { margin-top: 0; }
+      .field-input, .field-select {
+      width: 100%; background: rgba(255,255,255,0.06); border: 1px solid var(--line); color: var(--ink);
+      border-radius: 8px; padding: 10px 11px; font-size: 12.5px; font-family: inherit;
+      background-image: url("images/searchicon.png"); background-position: right 10px center; background-repeat: no-repeat;
+      min-height: 44px;
+      }
+      .field-select { background-image: none; appearance: auto; }
+      .field-check { display: flex; align-items: center; gap: 9px; min-height: 44px; font-size: 12.5px; color: var(--ink-dim); margin-top: 4px; }
+      .field-check input { width: 16px; height: 16px; flex: 0 0 auto; }
+
+      .legend-label { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-dim); margin: 2px 0 8px; }
+      .legend-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+      .legend-grid li { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink); }
+      .legend-grid .dot { width: 7px; height: 7px; border-radius: 50%; flex: 0 0 auto; }
+
+      .menu-divider { height: 8px; background: rgba(255,255,255,0.03); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+
+      .help-panel {
+      position: absolute; z-index: 20; top: 62px; right: 10px; width: 260px;
+      background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+      padding: 14px 16px; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+      opacity: 0; transform: translateY(-6px); visibility: hidden; pointer-events: none;
+      transition: opacity .2s ease, transform .2s ease, visibility 0s linear .2s;
+      }
+      .help-panel.open { opacity: 1; transform: translateY(0); visibility: visible; pointer-events: auto; transition: opacity .2s ease, transform .2s ease; }
+      .help-panel .menu-copy:last-child { margin-bottom: 0; }
     </style>
   </body>
 
@@ -275,7 +420,9 @@
         }
       }
     </script>
-    
+
+    <meta name = "viewport" content = "width=device-width, initial-scale=1">
+
     <meta name = "keywords" content = "Space situational awareness, SSA, Space traffic management, STM,
 				       space debris, space garbage, space junk, orbital debris, orbital garbage,
 				       orbital junk, astrodynamics, orbit determination, celestial mechanics,
@@ -302,20 +449,168 @@
     <script src = "main.js?v=7badb95"> </script>
 
     <script>
-      document.getElementById("DataSrcInfo").onclick = function()
-      {
-      document.getElementById("DataSrcPopup").style.display = "block"
-      }
+      (function () {
+        var brandToggle = document.getElementById("BrandToggle")
+        var timePanel = document.getElementById("TimePanel")
+        function setTimePanel(open) {
+          timePanel.classList.toggle("open", open)
+          brandToggle.setAttribute("aria-expanded", open ? "true" : "false")
+        }
+        brandToggle.addEventListener("click", function () {
+          setTimePanel(!timePanel.classList.contains("open"))
+        })
 
-      document.getElementsByClassName("close")[0].onclick = function()
-      {
-      document.getElementById("DataSrcPopup").style.display = "none"
-      }
+        var menuToggle = document.getElementById("MenuToggle")
+        var menuPanel = document.getElementById("MenuPanel")
+        function setMenu(open, opts) {
+          menuPanel.classList.toggle("open", open)
+          menuToggle.classList.toggle("open", open)
+          menuToggle.setAttribute("aria-expanded", open ? "true" : "false")
+          if (!open && !(opts && opts.silent)) menuToggle.focus()
+        }
+        menuToggle.addEventListener("click", function () {
+          setMenu(!menuPanel.classList.contains("open"))
+        })
 
-      document.getElementById("DebrisToggle").onclick = function()
-      {
-      OnToggleDebris()
-      }
+        var helpBtn = document.getElementById("HelpBtn")
+        var helpPanel = document.getElementById("HelpPanel")
+        function setHelp(open) {
+          helpPanel.classList.toggle("open", open)
+          helpBtn.setAttribute("aria-expanded", open ? "true" : "false")
+        }
+
+        window.addEventListener("keydown", function (e) {
+          if (e.key !== "Escape") return
+          if (menuPanel.classList.contains("open")) setMenu(false)
+          if (timePanel.classList.contains("open")) { setTimePanel(false); brandToggle.focus() }
+          if (helpPanel.classList.contains("open")) { setHelp(false); helpBtn.focus() }
+        })
+
+        document.addEventListener("click", function (e) {
+          if (menuPanel.classList.contains("open") && !menuPanel.contains(e.target) &&
+              e.target !== menuToggle && !menuToggle.contains(e.target)) {
+            setMenu(false, {silent: true})
+          }
+          if (timePanel.classList.contains("open") && !timePanel.contains(e.target) &&
+              e.target !== brandToggle && !brandToggle.contains(e.target)) {
+            setTimePanel(false)
+          }
+          if (helpPanel.classList.contains("open") && !helpPanel.contains(e.target) &&
+              e.target !== helpBtn && !helpBtn.contains(e.target)) {
+            setHelp(false)
+          }
+        })
+
+        Array.prototype.forEach.call(document.querySelectorAll(".menu-section"), function (section) {
+          var btn = section.querySelector(".menu-row.accordion")
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation()
+            var open = section.classList.toggle("open")
+            btn.setAttribute("aria-expanded", open ? "true" : "false")
+          })
+        })
+
+        Array.prototype.forEach.call(document.querySelectorAll('.menu-row[data-autoclose="true"]'), function (btn) {
+          btn.addEventListener("click", function (e) { e.stopPropagation(); setMenu(false) })
+        })
+
+        document.getElementById("DebrisToggle").onclick = function ()
+        {
+          OnToggleDebris()
+        }
+
+        // ---- time/animation controls (bound to the real Cesium clock) ----
+        var clock = window.CsView && window.CsView.clock
+        if (clock) {
+          var readout = document.getElementById("TimeReadout")
+          var playBtn = document.getElementById("TimePlayBtn")
+          var speedLabel = document.getElementById("TimeSpeedLabel")
+          var scrubTrack = document.getElementById("TimeScrub")
+          var scrubFill = document.getElementById("TimeScrubFill")
+          var scrubHandle = document.getElementById("TimeScrubHandle")
+
+          function fmtTime(jd) {
+            return Cesium.JulianDate.toDate(jd).toUTCString().replace(" GMT", "")
+          }
+          function updateTimeUI() {
+            readout.textContent = fmtTime(clock.currentTime)
+            var total = Cesium.JulianDate.secondsDifference(clock.stopTime, clock.startTime)
+            var elapsed = Cesium.JulianDate.secondsDifference(clock.currentTime, clock.startTime)
+            var frac = total > 0 ? Math.max(0, Math.min(1, elapsed / total)) : 0
+            scrubFill.style.width = (frac * 100) + "%"
+            scrubHandle.style.left = (frac * 100) + "%"
+            playBtn.textContent = clock.shouldAnimate ? "\u275A\u275A" : "\u25B6"
+            playBtn.setAttribute("aria-label", clock.shouldAnimate ? "Pause" : "Play")
+            var mag = Math.round(Math.abs(clock.multiplier))
+            speedLabel.textContent = mag + "\u00D7" + (clock.multiplier < 0 ? " \u25C4" : "")
+          }
+          clock.onTick.addEventListener(updateTimeUI)
+          updateTimeUI()
+
+          playBtn.addEventListener("click", function () {
+            clock.shouldAnimate = !clock.shouldAnimate
+            updateTimeUI()
+          })
+          document.getElementById("TimeRewindBtn").addEventListener("click", function () {
+            clock.multiplier = clock.multiplier > 0 ? -Math.abs(clock.multiplier) : clock.multiplier * 2
+            clock.shouldAnimate = true
+            updateTimeUI()
+          })
+          document.getElementById("TimeFfBtn").addEventListener("click", function () {
+            clock.multiplier = clock.multiplier < 0 ? Math.abs(clock.multiplier) : clock.multiplier * 2
+            clock.multiplier = Math.min(clock.multiplier, 64)
+            clock.shouldAnimate = true
+            updateTimeUI()
+          })
+          scrubTrack.addEventListener("click", function (e) {
+            var rect = scrubTrack.getBoundingClientRect()
+            var x = e.clientX - rect.left
+            var frac = Math.max(0, Math.min(1, x / rect.width))
+            var total = Cesium.JulianDate.secondsDifference(clock.stopTime, clock.startTime)
+            clock.currentTime = Cesium.JulianDate.addSeconds(clock.startTime, total * frac, new Cesium.JulianDate())
+            updateTimeUI()
+          })
+        }
+
+        // ---- menu action rows (replace Cesium's disabled native chrome) ----
+        document.getElementById("ResetViewBtn").addEventListener("click", function (e) {
+          e.stopPropagation()
+          if (window.CsView) window.CsView.camera.flyHome()
+          setMenu(false)
+        })
+
+        var sceneLabel = document.getElementById("SceneModeLabel")
+        document.getElementById("SceneModeBtn").addEventListener("click", function (e) {
+          e.stopPropagation()
+          if (!window.CsView) return
+          var scene = window.CsView.scene
+          if (scene.mode === Cesium.SceneMode.SCENE3D) {
+            scene.mode = Cesium.SceneMode.SCENE2D
+            sceneLabel.textContent = "2D"
+          } else if (scene.mode === Cesium.SceneMode.SCENE2D) {
+            scene.mode = Cesium.SceneMode.COLUMBUS_VIEW
+            sceneLabel.textContent = "Columbus"
+          } else {
+            scene.mode = Cesium.SceneMode.SCENE3D
+            sceneLabel.textContent = "3D"
+          }
+        })
+
+        document.getElementById("FullscreenBtn").addEventListener("click", function (e) {
+          e.stopPropagation()
+          if (Cesium.Fullscreen.fullscreenElement) {
+            Cesium.Fullscreen.exitFullscreen()
+          } else {
+            Cesium.Fullscreen.requestFullscreen(document.documentElement)
+          }
+          setMenu(false)
+        })
+
+        document.getElementById("HelpBtn").addEventListener("click", function (e) {
+          e.stopPropagation()
+          setHelp(!helpPanel.classList.contains("open"))
+        })
+      })()
     </script>
   </head>
 
